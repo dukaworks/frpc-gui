@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ultra Simple Test</title>
+    <style>
+        body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            margin: 0; 
+            padding: 20px; 
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: white;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+        .success { 
+            background: rgba(76, 175, 80, 0.8); 
+            padding: 15px; 
+            border-radius: 8px; 
+            margin: 10px 0;
+            border-left: 4px solid #4CAF50;
+        }
+        .error { 
+            background: rgba(244, 67, 54, 0.8); 
+            padding: 15px; 
+            border-radius: 8px; 
+            margin: 10px 0;
+            border-left: 4px solid #f44336;
+        }
+        .warning { 
+            background: rgba(255, 152, 0, 0.8); 
+            padding: 15px; 
+            border-radius: 8px; 
+            margin: 10px 0;
+            border-left: 4px solid #FF9800;
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        button {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: all 0.3s ease;
+        }
+        button:hover {
+            background: #45a049;
+            transform: translateY(-2px);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚀 FRPC Manager - Ultra Simple Test</h1>
+        <p>This test verifies basic browser functionality without React complications.</p>
+        
+        <div class="test-section">
+            <h3>🔍 Basic Browser Tests</h3>
+            <div id="basic-tests"></div>
+        </div>
+        
+        <div class="test-section">
+            <h3>🧪 Interactive Test</h3>
+            <button onclick="runInteractiveTest()">Click to Test Interactivity</button>
+            <div id="interactive-result"></div>
+        </div>
+        
+        <div class="test-section">
+            <h3>📊 Browser Information</h3>
+            <div id="browser-info"></div>
+        </div>
+        
+        <div class="test-section">
+            <h3>🎯 Next Steps</h3>
+            <p>If all tests pass, the issue is likely with React/Vite configuration.</p>
+            <p>If tests fail, there may be fundamental browser/environment issues.</p>
+        </div>
+    </div>
+
+    <script>
+        function addResult(containerId, success, message) {
+            const container = document.getElementById(containerId);
+            const div = document.createElement('div');
+            div.className = success ? 'success' : 'error';
+            div.innerHTML = `<strong>${success ? '✅' : '❌'}</strong> ${message}`;
+            container.appendChild(div);
+        }
+        
+        function addWarning(containerId, message) {
+            const container = document.getElementById(containerId);
+            const div = document.createElement('div');
+            div.className = 'warning';
+            div.innerHTML = `<strong>⚠️</strong> ${message}`;
+            container.appendChild(div);
+        }
+        
+        function runBasicTests() {
+            const results = document.getElementById('basic-tests');
+            
+            // Test 1: JavaScript Execution
+            try {
+                eval('1 + 1');
+                addResult('basic-tests', true, 'JavaScript execution working');
+            } catch (e) {
+                addResult('basic-tests', false, `JavaScript execution failed: ${e.message}`);
+            }
+            
+            // Test 2: DOM Manipulation
+            try {
+                const testDiv = document.createElement('div');
+                testDiv.textContent = 'Test successful';
+                document.body.appendChild(testDiv);
+                document.body.removeChild(testDiv);
+                addResult('basic-tests', true, 'DOM manipulation working');
+            } catch (e) {
+                addResult('basic-tests', false, `DOM manipulation failed: ${e.message}`);
+            }
+            
+            // Test 3: Modern APIs
+            try {
+                const hasLocalStorage = typeof Storage !== 'undefined';
+                const hasFetch = typeof fetch !== 'undefined';
+                const hasPromise = typeof Promise !== 'undefined';
+                const hasAsync = (function() { try { eval('async () => {}'); return true; } catch { return false; } })();
+                
+                if (hasLocalStorage && hasFetch && hasPromise && hasAsync) {
+                    addResult('basic-tests', true, 'Modern APIs available (localStorage, fetch, Promise, async/await)');
+                } else {
+                    addWarning('basic-tests', `Missing APIs: localStorage=${hasLocalStorage}, fetch=${hasFetch}, Promise=${hasPromise}, async=${hasAsync}`);
+                }
+            } catch (e) {
+                addResult('basic-tests', false, `API check failed: ${e.message}`);
+            }
+            
+            // Test 4: CSS Support
+            try {
+                const div = document.createElement('div');
+                div.style.cssText = 'display:flex;position:fixed;background:linear-gradient(red,blue)';
+                const hasFlex = div.style.display === 'flex';
+                const hasPosition = div.style.position === 'fixed';
+                const hasGradient = div.style.background.includes('linear-gradient');
+                
+                if (hasFlex && hasPosition && hasGradient) {
+                    addResult('basic-tests', true, 'CSS features working (flexbox, position fixed, gradients)');
+                } else {
+                    addWarning('basic-tests', `CSS issues: flex=${hasFlex}, position=${hasPosition}, gradient=${hasGradient}`);
+                }
+            } catch (e) {
+                addResult('basic-tests', false, `CSS test failed: ${e.message}`);
+            }
+        }
+        
+        function runInteractiveTest() {
+            const result = document.getElementById('interactive-result');
+            result.innerHTML = '<div class="success">✅ Button click detected! Interactivity working.</div>';
+            
+            // Test async functionality
+            setTimeout(() => {
+                result.innerHTML += '<div class="success">✅ Async operations working (setTimeout executed)</div>';
+            }, 1000);
+        }
+        
+        function showBrowserInfo() {
+            const info = document.getElementById('browser-info');
+            
+            try {
+                info.innerHTML = `
+                    <div class="success">User Agent: ${navigator.userAgent}</div>
+                    <div class="success">Document Ready State: ${document.readyState}</div>
+                    <div class="success">Window Location: ${window.location.href}</div>
+                    <div class="success">Screen Size: ${window.innerWidth}x${window.innerHeight}</div>
+                    <div class="success">Color Depth: ${window.screen.colorDepth}-bit</div>
+                    <div class="success">Language: ${navigator.language}</div>
+                    <div class="success">Online Status: ${navigator.onLine ? 'Online' : 'Offline'}</div>
+                `;
+            } catch (e) {
+                info.innerHTML = `<div class="error">Failed to get browser info: ${e.message}</div>`;
+            }
+        }
+        
+        // Run tests when page loads
+        document.addEventListener('DOMContentLoaded', () => {
+            console.log('🧪 Starting ultra simple browser tests...');
+            runBasicTests();
+            showBrowserInfo();
+            console.log('✅ Ultra simple tests completed');
+        });
+        
+        // Global error handler
+        window.addEventListener('error', (event) => {
+            console.error('🚨 Global error:', event.error);
+            addResult('basic-tests', false, `Global error: ${event.error?.message || 'Unknown error'}`);
+        });
+        
+        window.addEventListener('unhandledrejection', (event) => {
+            console.error('🚨 Unhandled promise rejection:', event.reason);
+            addResult('basic-tests', false, `Promise rejection: ${event.reason?.message || 'Unknown rejection'}`);
+        });
+    </script>
+</body>
+</html>

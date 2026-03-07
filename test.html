@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>FRPC Manager Test</title>
+</head>
+<body>
+    <h1>FRPC Manager - Direct Test</h1>
+    <div id="app"></div>
+    
+    <script type="module">
+        console.log('🧪 Testing basic JavaScript execution...');
+        
+        // Test 1: Basic DOM manipulation
+        const app = document.getElementById('app');
+        if (app) {
+            app.innerHTML = '<p style="color: green;">✅ DOM manipulation working</p>';
+            console.log('✅ DOM manipulation test passed');
+        } else {
+            console.error('❌ DOM element not found');
+        }
+        
+        // Test 2: Module loading
+        console.log('✅ Module script executing correctly');
+        
+        // Test 3: Basic React-like structure
+        const reactTest = () => {
+            return `
+                <div style="border: 2px solid #333; padding: 20px; margin: 20px; border-radius: 8px;">
+                    <h2>React Component Simulation</h2>
+                    <p>If you see this styled box, CSS is working</p>
+                    <button onclick="alert('Button clicked!')">Test Button</button>
+                </div>
+            `;
+        };
+        
+        app.innerHTML += reactTest();
+        console.log('✅ Component simulation test completed');
+        
+        // Test 4: Check for common issues
+        console.log('📋 Document ready state:', document.readyState);
+        console.log('🌐 Window location:', window.location.href);
+        console.log('👤 User agent:', navigator.userAgent);
+        
+    </script>
+</body>
+</html>

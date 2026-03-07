@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Minimal React Test</title>
+    <style>
+        body { 
+            font-family: Arial, sans-serif; 
+            margin: 0; 
+            padding: 20px; 
+            background: #f5f5f5; 
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .success { 
+            background: #d4edda; 
+            color: #155724; 
+            padding: 15px; 
+            border-radius: 5px; 
+            margin: 10px 0;
+            border-left: 4px solid #28a745;
+        }
+        .error { 
+            background: #f8d7da; 
+            color: #721c24; 
+            padding: 15px; 
+            border-radius: 5px; 
+            margin: 10px 0;
+            border-left: 4px solid #dc3545;
+        }
+        .react-app {
+            border: 2px solid #007bff;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            background: #e7f3ff;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧪 Minimal React Test</h1>
+        <p>This page tests if React can load without any complex imports.</p>
+        
+        <div id="test-results">
+            <div class="success">✅ Page loaded successfully</div>
+        </div>
+        
+        <div id="root" class="react-app">
+            <div style="color: #666; text-align: center;">
+                ⏳ React component will appear here...
+            </div>
+        </div>
+        
+        <div id="console-output" style="background: #f8f9fa; padding: 15px; border-radius: 5px; font-family: monospace; font-size: 12px; margin-top: 20px;">
+            <strong>Console Output:</strong><br>
+            <div id="console-content">Waiting for React...</div>
+        </div>
+    </div>
+
+    <!-- Load React from CDN -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    
+    <script>
+        function addConsoleMessage(message) {
+            const consoleContent = document.getElementById('console-content');
+            const timestamp = new Date().toLocaleTimeString();
+            consoleContent.innerHTML += `<div>[${timestamp}] ${message}</div>`;
+            console.log(message);
+        }
+        
+        function addTestResult(success, message) {
+            const results = document.getElementById('test-results');
+            const div = document.createElement('div');
+            div.className = success ? 'success' : 'error';
+            div.innerHTML = `${success ? '✅' : '❌'} ${message}`;
+            results.appendChild(div);
+            addConsoleMessage(message);
+        }
+        
+        // Test 1: Check if React is available
+        addConsoleMessage('Checking React availability...');
+        if (typeof React !== 'undefined' && typeof ReactDOM !== 'undefined') {
+            addTestResult(true, `React ${React.version} loaded successfully`);
+            addTestResult(true, 'ReactDOM available');
+        } else {
+            addTestResult(false, 'React or ReactDOM not found');
+        }
+        
+        // Test 2: Create a simple React component
+        addConsoleMessage('Creating minimal React component...');
+        try {
+            function MinimalApp() {
+                addConsoleMessage('MinimalApp component rendered!');
+                return React.createElement('div', { 
+                    style: { 
+                        background: '#28a745', 
+                        color: 'white', 
+                        padding: '20px', 
+                        borderRadius: '8px',
+                        textAlign: 'center'
+                    }
+                }, 
+                    React.createElement('h2', null, '🎉 React Component Loaded!'),
+                    React.createElement('p', null, 'This confirms React is working correctly.'),
+                    React.createElement('button', {
+                        onClick: () => {
+                            addConsoleMessage('Button clicked! Event handling works.');
+                            alert('✅ React event handling successful!');
+                        },
+                        style: {
+                            background: '#007bff',
+                            color: 'white',
+                            border: 'none',
+                            padding: '10px 20px',
+                            borderRadius: '5px',
+                            cursor: 'pointer',
+                            fontSize: '16px',
+                            marginTop: '10px'
+                        }
+                    }, 'Test React Button')
+                );
+            }
+            
+            // Test 3: Render the component
+            addConsoleMessage('Rendering React component...');
+            const root = ReactDOM.createRoot(document.getElementById('root'));
+            root.render(React.createElement(MinimalApp));
+            addTestResult(true, 'React component rendered successfully');
+            
+        } catch (error) {
+            addTestResult(false, `React component failed: ${error.message}`);
+            addConsoleMessage(`Error details: ${error.stack}`);
+        }
+        
+        // Test 4: Check browser environment
+        addConsoleMessage('Checking browser environment...');
+        addTestResult(true, `User Agent: ${navigator.userAgent.substring(0, 50)}...`);
+        addTestResult(true, `Document ready: ${document.readyState}`);
+        addTestResult(true, `Screen: ${window.innerWidth}x${window.innerHeight}`);
+        
+        addConsoleMessage('🎯 Minimal React test completed!');
+        
+        // Global error handlers
+        window.addEventListener('error', (event) => {
+            addTestResult(false, `Global error: ${event.error?.message || 'Unknown error'}`);
+            addConsoleMessage(`Global error: ${event.error?.stack || event.error}`);
+        });
+        
+        window.addEventListener('unhandledrejection', (event) => {
+            addTestResult(false, `Promise rejection: ${event.reason?.message || 'Unknown rejection'}`);
+            addConsoleMessage(`Promise rejection: ${event.reason}`);
+        });
+    </script>
+</body>
+</html>

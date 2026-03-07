@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>FRPC Manager - Basic Test</title>
+    <meta charset="UTF-8">
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .test-result { margin: 10px 0; padding: 10px; border-radius: 5px; }
+        .success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .warning { background: #fff3cd; color: #856404; border: 1px solid #ffeeba; }
+    </style>
+</head>
+<body>
+    <h1>🔍 FRPC Manager - Basic Browser Test</h1>
+    <div id="test-results"></div>
+    
+    <script>
+        const results = document.getElementById('test-results');
+        
+        function addResult(test, success, message) {
+            const div = document.createElement('div');
+            div.className = `test-result ${success ? 'success' : 'error'}`;
+            div.innerHTML = `<strong>${test}:</strong> ${message}`;
+            results.appendChild(div);
+        }
+        
+        function addWarning(test, message) {
+            const div = document.createElement('div');
+            div.className = 'test-result warning';
+            div.innerHTML = `<strong>${test}:</strong> ${message}`;
+            results.appendChild(div);
+        }
+        
+        // Test 1: Basic JavaScript
+        try {
+            addResult('JavaScript Execution', true, '✅ JavaScript is working');
+        } catch (e) {
+            addResult('JavaScript Execution', false, '❌ ' + e.message);
+        }
+        
+        // Test 2: DOM Manipulation
+        try {
+            const testDiv = document.createElement('div');
+            testDiv.id = 'test-div';
+            testDiv.textContent = 'Test element created successfully';
+            document.body.appendChild(testDiv);
+            addResult('DOM Manipulation', true, '✅ DOM manipulation working');
+        } catch (e) {
+            addResult('DOM Manipulation', false, '❌ ' + e.message);
+        }
+        
+        // Test 3: Browser APIs
+        try {
+            const hasLocalStorage = typeof Storage !== 'undefined';
+            const hasFetch = typeof fetch !== 'undefined';
+            const hasPromise = typeof Promise !== 'undefined';
+            addResult('Browser APIs', true, `✅ localStorage: ${hasLocalStorage}, fetch: ${hasFetch}, Promise: ${hasPromise}`);
+        } catch (e) {
+            addResult('Browser APIs', false, '❌ ' + e.message);
+        }
+        
+        // Test 4: Check for common issues
+        try {
+            addWarning('Browser Info', `
+                User Agent: ${navigator.userAgent.substring(0, 50)}...<br>
+                Document Ready: ${document.readyState}<br>
+                Window Location: ${window.location.href}<br>
+                Screen Size: ${window.innerWidth}x${window.innerHeight}
+            `);
+        } catch (e) {
+            addResult('Browser Info', false, '❌ ' + e.message);
+        }
+        
+        // Test 5: CSS Support
+        try {
+            const div = document.createElement('div');
+            div.style.cssText = 'display:flex;position:fixed;background:linear-gradient(red,blue)';
+            document.body.appendChild(div);
+            const hasFlex = div.style.display === 'flex';
+            const hasPosition = div.style.position === 'fixed';
+            const hasGradient = div.style.background.includes('linear-gradient');
+            addResult('CSS Support', true, `✅ Flexbox: ${hasFlex}, Position Fixed: ${hasPosition}, Gradients: ${hasGradient}`);
+            document.body.removeChild(div);
+        } catch (e) {
+            addResult('CSS Support', false, '❌ ' + e.message);
+        }
+        
+        // Test 6: Console availability
+        try {
+            console.log('✅ Console.log is working');
+            console.error('✅ Console.error is working');
+            console.warn('✅ Console.warn is working');
+            addResult('Console API', true, '✅ Console functions available');
+        } catch (e) {
+            addResult('Console API', false, '❌ ' + e.message);
+        }
+        
+        // Final message
+        setTimeout(() => {
+            addResult('Test Complete', true, '🎉 All basic browser tests completed!');
+        }, 100);
+        
+        console.log('Basic browser test completed');
+    </script>
+</body>
+</html>
