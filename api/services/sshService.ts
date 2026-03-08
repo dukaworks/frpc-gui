@@ -14,6 +14,7 @@ export interface FrpcProcessInfo {
   command?: string;
   configPath?: string;
   version?: string;
+  uptime?: string; // e.g. "Up 2 days"
   status: 'running' | 'stopped' | 'unknown';
   source: 'process' | 'docker' | 'systemd';
   serviceName?: string;
@@ -153,6 +154,7 @@ class SshService {
         
         let targetContainerId = '';
         let targetContainerName = '';
+        let targetUptime = '';
         
         for (const line of lines) {
             if (!line) continue;
@@ -160,15 +162,34 @@ class SshService {
             if (name.includes('frpc') || image.includes('frpc') || image.includes('frp')) {
                 targetContainerId = id;
                 targetContainerName = name;
+                targetUptime = status; // e.g. "Up 2 hours"
                 break;
             }
         }
 
         if (!targetContainerId) return null;
 
-        // Inspect to find config mount
-        const inspectOutput = await this.exec(`${dockerCmd} inspect --format "{{json .Mounts}}" ${targetContainerId}`);
-        const mounts = JSON.parse(inspectOutput || '[]');
+        // Try to get version
+        let version = '';
+        try {
+            const verOutput = await this.exec(`${dockerCmd} exec ${targetContainerId} frpc -v`);
+            if (verOutput && !verOutput.toLowerCase().includes('exec failed')) {
+                version = verOutput.trim();
+            }
+        } catch (e) {
+            // ignore if exec fails
+        }
+
+        // Inspect to find config mount and start time
+        const inspectOutput = await this.exec(`${dockerCmd} inspect --format "{{json .Mounts}}|{{.State.StartedAt}}" ${targetContainerId}`);
+        const [mountsJson, startedAt] = inspectOutput.split('|');
+        const mounts = JSON.parse(mountsJson || '[]');
+        
+        let startTimestamp: number | undefined;
+        if (startedAt) {
+            const ts = new Date(startedAt).getTime();
+            if (!isNaN(ts)) startTimestamp = ts;
+        }
         
         // Find a mount that looks like a config file
         let configPath = '';
@@ -210,7 +231,10 @@ class SshService {
             source: 'docker',
             configPath: configPath || undefined,
             command: `${dockerCmd} restart ${targetContainerName}`,
-            requiresSudo: useSudo
+            requiresSudo: useSudo,
+            uptime: targetUptime || 'Unknown',
+            startTimestamp,
+            version: version || undefined
         };
 
     } catch (e) {
@@ -227,6 +251,26 @@ class SshService {
 
         const firstLine = units.trim().split('\n')[0];
         const serviceName = firstLine.split(/\s+/)[0];
+
+        // Get Uptime (ActiveEnterTimestamp)
+        const activeState = await this.exec(`systemctl show ${serviceName} --property=ActiveEnterTimestamp --value`);
+        
+        let startTimestamp: number | undefined;
+        if (activeState) {
+            const ts = new Date(activeState).getTime();
+            if (!isNaN(ts)) startTimestamp = ts;
+        }
+
+        // Get Version
+        let version = '';
+        try {
+            const execPath = await this.exec(`systemctl show ${serviceName} --property=ExecStart --value`);
+            const binPath = execPath.split(' ')[0].replace('path=', '').replace(/[;}]/g, ''); // Crude parsing
+            if (binPath && binPath.includes('frpc')) {
+                version = await this.exec(`${binPath} -v`);
+                version = version.trim();
+            }
+        } catch (e) {}
 
         // Get ExecStart to find config path
         const execStart = await this.exec(`systemctl show ${serviceName} --property=ExecStart --value`);
@@ -267,7 +311,10 @@ class SshService {
             source: 'systemd',
             configPath: configPath || undefined,
             command: `sudo systemctl restart ${serviceName}`,
-            requiresSudo: true
+            requiresSudo: true,
+            uptime: activeState || 'Unknown',
+            startTimestamp,
+            version: version || undefined
         };
 
       } catch (e) {
@@ -285,6 +332,15 @@ class SshService {
         const parts = firstLine.split(/\s+/);
         const pid = parts[0];
         const command = parts.slice(1).join(' ');
+
+        let startTimestamp: number | undefined;
+        try {
+            const lstart = await this.exec(`ps -p ${pid} -o lstart=`);
+            if (lstart) {
+                const ts = new Date(lstart.trim()).getTime();
+                if (!isNaN(ts)) startTimestamp = ts;
+            }
+        } catch (e) {}
 
         let configPath = '';
         const cIndex = parts.indexOf('-c');
@@ -315,7 +371,8 @@ class SshService {
             command,
             status: 'running',
             source: 'process',
-            configPath
+            configPath,
+            startTimestamp
         };
       } catch (e) {
           return null;

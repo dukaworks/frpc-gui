@@ -6,6 +6,7 @@ export interface SSHConfig {
   username: string;
   password?: string; // Optional if privateKey used
   privateKey?: string;
+  token?: string; // FRPS Token
   lastConnected?: number;
 }
 
@@ -18,6 +19,8 @@ export interface FrpcProcessInfo {
   source: 'process' | 'docker' | 'systemd';
   serviceName?: string;
   requiresSudo?: boolean;
+  uptime?: string;
+  startTimestamp?: number;
 }
 
 export interface ConnectResponse {
@@ -49,4 +52,9 @@ export interface CommonConfig {
   serverPort: number;
   token?: string;
   [key: string]: any;
+}
+
+export interface ServerProfile extends CommonConfig {
+  id: string;
+  name: string; // Profile Alias
 }

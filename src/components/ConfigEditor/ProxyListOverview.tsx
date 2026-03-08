@@ -1,15 +1,38 @@
-import { useFrpcConfig } from '@/hooks/useFrpcConfig';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { ArrowRight } from 'lucide-react';
+import { ArrowRight, MoreHorizontal, Pencil, Trash2, LayoutGrid, Plus } from 'lucide-react';
 import type { ProxyConfig } from '@/shared/types';
+import { Button } from '@/components/ui/button';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { Checkbox } from '@/components/ui/checkbox';
+import { cn } from '@/lib/utils';
 
-export function ProxyListOverview({ content }: { content: string }) {
-  const { proxies, parseError } = useFrpcConfig(content);
+interface ProxyListOverviewProps {
+  proxies: ProxyConfig[];
+  parseError?: string;
+  selectionMode: boolean;
+  selectedProxies: Set<string>;
+  onToggleSelection: (name: string) => void;
+  onEdit: (proxy: ProxyConfig) => void;
+  onDelete: (name: string) => void;
+  onAdd: () => void;
+}
 
-  if (!content) {
-    return <div className="text-muted-foreground p-4">暂无配置内容</div>;
-  }
+export function ProxyListOverview({ 
+  proxies, 
+  parseError, 
+  selectionMode, 
+  selectedProxies, 
+  onToggleSelection, 
+  onEdit, 
+  onDelete,
+  onAdd
+}: ProxyListOverviewProps) {
   
   if (parseError) {
       return (
@@ -25,9 +48,19 @@ export function ProxyListOverview({ content }: { content: string }) {
 
   if (proxies.length === 0) {
       return (
-         <div className="text-center py-12 text-muted-foreground border-2 border-dashed rounded-lg">
-            暂无代理配置。请点击 "Edit" 标签页添加代理。
-         </div>
+        <Card className="border-dashed border-2 bg-gray-50/50">
+          <CardContent className="flex flex-col items-center justify-center py-10 text-center">
+            <LayoutGrid className="h-10 w-10 text-muted-foreground mb-4" />
+            <h3 className="text-lg font-medium text-gray-900">No Active Proxies</h3>
+            <p className="text-sm text-gray-500 mb-4 max-w-sm">
+              Create proxy tunnels to expose your local services to the internet.
+            </p>
+            <Button onClick={onAdd}>
+              <Plus className="mr-2 h-4 w-4" />
+              Add First Proxy
+            </Button>
+          </CardContent>
+        </Card>
       );
   }
 
@@ -51,32 +84,82 @@ export function ProxyListOverview({ content }: { content: string }) {
 
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-      {proxies.map(p => (
-        <Card key={p.name} className="hover:shadow-md transition-shadow">
-           <CardContent className="p-4 space-y-3">
-              <div className="flex justify-between items-start">
-                 <div className="font-semibold truncate max-w-[70%]" title={p.name}>{p.name}</div>
-                 <Badge variant="secondary" className="uppercase text-xs font-mono">{p.type}</Badge>
-              </div>
+      {proxies.map(p => {
+        const isSelected = selectedProxies.has(p.name);
+        return (
+          <Card 
+            key={p.name} 
+            className={cn(
+              "hover:shadow-md transition-all relative group cursor-pointer",
+              selectionMode && isSelected && "bg-muted/50 border-primary/50"
+            )}
+            onClick={(e) => {
+              // Prevent triggering when clicking on menu
+              if ((e.target as HTMLElement).closest('[role="menuitem"]')) return;
+              if ((e.target as HTMLElement).closest('button')) return;
               
-              <div className="text-sm text-muted-foreground flex items-center gap-2">
-                 <span className="font-mono text-xs bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded">
-                    {getLocalAddress(p)}
-                 </span>
-                 <ArrowRight className="h-3 w-3" />
-                 <span className="font-medium text-foreground">
-                    {getRemoteAddress(p)}
-                 </span>
-              </div>
-              
-              {p.type !== 'tcp' && p.type !== 'udp' && p.customDomains && p.customDomains.length > 1 && (
-                  <div className="text-xs text-muted-foreground truncate" title={p.customDomains.join(', ')}>
-                      +{p.customDomains.length - 1} more domains
+              if (selectionMode) {
+                onToggleSelection(p.name);
+              }
+            }}
+          >
+             <CardContent className="p-4 space-y-3">
+                <div className="flex justify-between items-start gap-2">
+                   <div className="font-semibold truncate flex-1" title={p.name}>{p.name}</div>
+                   {/* Badge moved to second line */}
+                </div>
+                
+                <div className="text-sm text-muted-foreground flex items-center gap-2 flex-wrap">
+                   <Badge variant="secondary" className="uppercase text-xs font-mono shrink-0 mr-1">{p.type}</Badge>
+                   <span className="font-mono text-xs bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded">
+                      {getLocalAddress(p)}
+                   </span>
+                   <ArrowRight className="h-3 w-3" />
+                   <span className="font-medium text-foreground">
+                      {getRemoteAddress(p)}
+                   </span>
+                </div>
+                
+                {p.type !== 'tcp' && p.type !== 'udp' && p.customDomains && p.customDomains.length > 1 && (
+                    <div className="text-xs text-muted-foreground truncate" title={p.customDomains.join(', ')}>
+                        +{p.customDomains.length - 1} more domains
+                    </div>
+                )}
+
+                {/* Selection Checkbox */}
+                {selectionMode && (
+                  <div className="absolute top-3 right-3 pointer-events-none">
+                    <Checkbox 
+                      checked={isSelected}
+                      className="data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground border-primary h-5 w-5"
+                    />
                   </div>
-              )}
-           </CardContent>
-        </Card>
-      ))}
+                )}
+
+                {/* Actions Menu (Only when not in selection mode) */}
+                {!selectionMode && (
+                  <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon" className="h-8 w-8">
+                          <MoreHorizontal className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem onClick={() => onEdit(p)}>
+                          <Pencil className="mr-2 h-4 w-4" /> Edit
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => onDelete(p.name)} className="text-red-600 focus:text-red-600">
+                          <Trash2 className="mr-2 h-4 w-4" /> Delete
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
+                )}
+             </CardContent>
+          </Card>
+        );
+      })}
     </div>
   );
 }

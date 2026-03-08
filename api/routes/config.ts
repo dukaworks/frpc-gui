@@ -110,4 +110,35 @@ router.post('/service', requireAuth, async (req: any, res) => {
   }
 });
 
+// Get Service Logs
+router.get('/logs', requireAuth, async (req: any, res) => {
+  const { type, serviceName, lines = 50 } = req.query;
+
+  if (!type || !serviceName) {
+    return res.status(400).json({ error: 'Missing type or serviceName' });
+  }
+
+  try {
+    let cmd = '';
+    // Limit lines to avoid huge payload
+    const n = Math.min(parseInt(lines as string) || 50, 200);
+
+    if (type === 'docker') {
+      // Docker logs
+      // serviceName is container ID or name
+      cmd = `docker logs --tail ${n} ${serviceName} 2>&1`;
+    } else if (type === 'systemd') {
+      // Systemd logs
+      cmd = `journalctl -u ${serviceName} -n ${n} --no-pager`;
+    } else {
+      return res.status(400).json({ error: 'Unsupported service type for logs' });
+    }
+
+    const output = await req.ssh.exec(cmd);
+    res.json({ logs: output });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 export default router;

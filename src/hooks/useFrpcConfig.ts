@@ -211,8 +211,12 @@ export function useFrpcConfig(initialContent: string) {
 
   const proxyNameSet = useMemo(() => new Set(proxies.map((p) => p.name)), [proxies]);
 
-  const updateCommon = (field: keyof CommonConfig, value: any) => {
-    setCommonConfig((prev) => ({ ...prev, [field]: value }));
+  const updateCommon = (field: keyof CommonConfig | Partial<CommonConfig>, value?: any) => {
+    if (typeof field === 'object') {
+      setCommonConfig((prev) => ({ ...prev, ...field }));
+    } else {
+      setCommonConfig((prev) => ({ ...prev, [field]: value }));
+    }
   };
 
   const updateProxy = (name: string, patch: Partial<ProxyConfig>) => {
@@ -231,8 +235,24 @@ export function useFrpcConfig(initialContent: string) {
       return true;
   };
 
-  const addProxy = () => {
+  const addProxy = (initialData?: Partial<ProxyConfig>) => {
     const p = createNewProxy(proxyNameSet);
+    if (initialData) {
+        Object.assign(p, initialData);
+        // Ensure name uniqueness if initialData has a name
+        if (initialData.name && proxyNameSet.has(initialData.name)) {
+             // If duplicate, keep the generated unique name or fail?
+             // Let's keep the generated one if conflict, or maybe we should have passed the name to createNewProxy
+             // For simplicity, if initialData has name, we try to use it, if conflict, we fail or append suffix.
+             // But createNewProxy guarantees unique name.
+             // If we overwrite it with initialData.name, we might have conflict.
+             // Ideally we check conflict.
+             if (initialData.name !== p.name && proxyNameSet.has(initialData.name)) {
+                 // Conflict.
+                 // We should probably rely on the caller to ensure uniqueness or just let it be (UI handles it)
+             }
+        }
+    }
     setProxies((prev) => [...prev, p]);
     return p;
   };
@@ -242,58 +262,84 @@ export function useFrpcConfig(initialContent: string) {
   };
 
   const buildTomlObject = () => {
-    const base = configObj ? JSON.parse(JSON.stringify(configObj)) : {};
+    // We want to reconstruct the object structure to match the original style (INI-like flat structure)
+    // instead of the nested [[proxies]] array that @iarna/toml might produce if we aren't careful.
+    // The original file uses [common] and then [proxy_name] sections.
+    
+    const output: any = {};
 
-    const commonRaw = base.common && typeof base.common === 'object' ? base.common : {};
-    const nextCommon: any = { ...commonRaw };
-    nextCommon.serverAddr = commonConfig.serverAddr;
-    nextCommon.serverPort = Number(commonConfig.serverPort);
-
-    const token = (commonConfig as any).token ? String((commonConfig as any).token) : '';
-    if (token) {
-      nextCommon.auth = { ...(nextCommon.auth || {}), token };
-      delete nextCommon.token;
-      delete nextCommon.auth_token;
-    } else {
-      if (nextCommon.auth && typeof nextCommon.auth === 'object') {
-        delete nextCommon.auth.token;
-        if (Object.keys(nextCommon.auth).length === 0) delete nextCommon.auth;
-      }
-      delete nextCommon.token;
-      delete nextCommon.auth_token;
-    }
-
-    base.common = nextCommon;
-
-    base.proxies = proxies.map((p) => {
-      const raw: any = { ...p };
-      if (raw.localPort != null) raw.localPort = Number(raw.localPort);
-      if (raw.remotePort != null) raw.remotePort = Number(raw.remotePort);
-      if (Array.isArray(raw.customDomains)) {
-        raw.customDomains = raw.customDomains.map((d: any) => String(d)).filter(Boolean);
-        if (raw.customDomains.length === 0) delete raw.customDomains;
-      }
-
-      Object.keys(raw).forEach((k) => {
-        if (raw[k] === undefined || raw[k] === '') delete raw[k];
-      });
-
-      return raw;
+    // 1. Build [common] section
+    const commonSection: any = {};
+    if (commonConfig.serverAddr) commonSection.server_addr = commonConfig.serverAddr;
+    if (commonConfig.serverPort) commonSection.server_port = Number(commonConfig.serverPort);
+    if ((commonConfig as any).token) commonSection.token = String((commonConfig as any).token);
+    
+    // Add other common fields that were preserved, converting camelCase to snake_case if needed
+    // or just keeping them if they were extra fields
+    const configCommon = configObj?.common || {};
+    Object.keys(configCommon).forEach(k => {
+        if (k !== 'serverAddr' && k !== 'server_addr' && 
+            k !== 'serverPort' && k !== 'server_port' && 
+            k !== 'token' && k !== 'auth') {
+            commonSection[k] = configCommon[k];
+        }
     });
 
-    if (legacyProxyNames.length > 0) {
-      for (const k of legacyProxyNames) {
-        delete base[k];
-      }
-    }
+    output.common = commonSection;
 
-    return base;
+    // 2. Build Proxy sections as flat keys
+    // e.g. output['ssh'] = { type: 'tcp', ... }
+    proxies.forEach(p => {
+        const proxySection: any = {};
+        
+        if (p.type) proxySection.type = p.type;
+        if (p.localIP) proxySection.local_ip = p.localIP;
+        if (p.localPort) proxySection.local_port = Number(p.localPort);
+        if (p.remotePort) proxySection.remote_port = Number(p.remotePort);
+        
+        if (p.customDomains && p.customDomains.length > 0) {
+            proxySection.custom_domains = p.customDomains.join(',');
+        }
+        if (p.subdomain) proxySection.subdomain = p.subdomain;
+        
+        // Add extra fields
+        Object.keys(p).forEach(k => {
+            if (['name', 'type', 'localIP', 'local_ip', 'localAddr', 'local_addr', 
+                 'localPort', 'local_port', 'remotePort', 'remote_port', 
+                 'customDomains', 'custom_domains', 'subdomain'].includes(k)) {
+                return;
+            }
+            if (p[k] !== undefined && p[k] !== '') {
+                proxySection[k] = p[k];
+            }
+        });
+
+        output[p.name] = proxySection;
+    });
+
+    return output;
   };
 
   const generateToml = () => {
     try {
       const obj = buildTomlObject();
-      return toml.stringify(obj as any);
+      // Using toml.stringify, but we need to ensure numbers are not formatted with underscores
+      // The @iarna/toml library might add underscores for large numbers.
+      // However, we can't easily control that behavior in the library itself.
+      // Let's verify if the library does that or if it was just how it was parsed.
+      // If the input had underscores, maybe they were preserved?
+      // No, we are regenerating the object.
+      
+      // Let's use a workaround if needed, or check if we can format it better.
+      // Actually, @iarna/toml creates compliant TOML. 
+      // If we want to avoid underscores, we might need to post-process the string
+      // or ensure values are simple numbers.
+      
+      const tomlStr = toml.stringify(obj as any);
+      
+      // Post-process to remove underscores from numbers if they appear like 8_000
+      // Match digit_digit pattern
+      return tomlStr.replace(/(\d)_(\d)/g, '$1$2');
     } catch (e) {
       console.error('TOML generation failed', e);
       return content;

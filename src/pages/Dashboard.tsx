@@ -1,29 +1,263 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useUserStore } from '@/store/userStore';
 import { useFrpcStore } from '@/store/frpcStore';
 import { ApiClient } from '@/lib/api';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Loader2, Terminal, FileText, Activity, Server, Box, Eye, Edit3, Save, Play, ArrowLeft, LayoutGrid, Settings, Plus, RotateCw, Power, RefreshCw } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { Loader2, Terminal, FileText, Activity, Server, Box, Eye, Edit3, Save, Play, ArrowLeft, LayoutGrid, Settings, Plus, RotateCw, Power, RefreshCw, CheckSquare, Square, Trash2, Globe, Lock } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ConfigEditor } from '@/components/ConfigEditor';
 import { ProxyListOverview } from '@/components/ConfigEditor/ProxyListOverview';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { useFrpcConfig } from '@/hooks/useFrpcConfig';
+import { ProxyEditDialog } from '@/components/ConfigEditor/ProxyEditDialog';
+import { ServerListOverview } from '@/components/ConfigEditor/ServerListOverview';
+import { ServerEditDialog } from '@/components/ConfigEditor/ServerEditDialog';
+import { SshEditDialog } from '@/components/ConfigEditor/SshEditDialog';
+import { ProxyConfig, ServerProfile, SSHConfig } from '@/shared/types';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+
+function UptimeDisplay({ startTimestamp }: { startTimestamp: number }) {
+  const [uptime, setUptime] = useState('');
+
+  useEffect(() => {
+    const update = () => {
+        const now = Date.now();
+        const diff = Math.floor((now - startTimestamp) / 1000);
+        
+        if (diff < 0) {
+            setUptime('Starting...');
+            return;
+        }
+
+        if (diff < 60) {
+            setUptime(`Up ${diff} seconds`);
+        } else if (diff < 3600) {
+            setUptime(`Up ${Math.floor(diff / 60)} minutes`);
+        } else if (diff < 86400) {
+            const hrs = Math.floor(diff / 3600);
+            const mins = Math.floor((diff % 3600) / 60);
+            setUptime(`Up ${hrs} hours, ${mins} minutes`);
+        } else {
+            const days = Math.floor(diff / 86400);
+            const hrs = Math.floor((diff % 86400) / 3600);
+            setUptime(`Up ${days} days, ${hrs} hours`);
+        }
+    };
+
+    update();
+    const interval = setInterval(update, 1000);
+    return () => clearInterval(interval);
+  }, [startTimestamp]);
+
+  return <span className="truncate">{uptime}</span>;
+}
 
 export default function Dashboard() {
   const navigate = useNavigate();
   const { isConnected, processInfo, disconnect, setProcessInfo } = useFrpcStore();
+  const { savedConnections } = useUserStore();
   const [configContent, setConfigContent] = useState('');
   const [loadingConfig, setLoadingConfig] = useState(false);
   const [serviceLoading, setServiceLoading] = useState(false);
   const [scanLoading, setScanLoading] = useState(false);
+  const [restartRequired, setRestartRequired] = useState(false);
+  
+  // Feedback Dialog State
+  const [feedbackOpen, setFeedbackOpen] = useState(false);
+  const [feedbackType, setFeedbackType] = useState<'success' | 'error'>('success');
+  const [feedbackMessage, setFeedbackMessage] = useState('');
+
+  const showFeedback = (type: 'success' | 'error', message: string) => {
+    setFeedbackType(type);
+    setFeedbackMessage(message);
+    setFeedbackOpen(true);
+  };
   
   // State for manual config mode
-  const [manualConfigPath, setManualConfigPath] = useState('/etc/frp/frpc.toml');
-  const [manualMode, setManualMode] = useState(false);
-  const [manualLoading, setManualLoading] = useState(false);
+  const [logs, setLogs] = useState<string>('');
+  const [logsLoading, setLogsLoading] = useState(false);
+  
+  const fetchLogs = async () => {
+    // Ensure we are connected before fetching
+    if (!isConnected || !processInfo?.serviceName || !processInfo?.source) return;
+    
+    setLogsLoading(true);
+    try {
+      const res = await ApiClient.fetchLogs(processInfo.source, processInfo.serviceName);
+      // Clean up logs: remove ANSI codes
+      const rawLogs = res.logs || '';
+      // Regex to remove ANSI color codes and other escape sequences
+      const cleanLogs = rawLogs.replace(/[\u001b\u009b][[()#;?]*(?:[0-9]{1,4}(?:;[0-9]{0,4})*)?[0-9A-ORZcf-nqry=><]/g, '');
+      setLogs(cleanLogs || 'No logs available');
+    } catch (e: any) {
+      console.error("Failed to fetch logs", e);
+      if (e.message === 'Not connected' || e.message?.includes('Not connected')) {
+          disconnect();
+          navigate('/');
+      }
+    } finally {
+      setLogsLoading(false);
+    }
+  };
+
+  // Auto-fetch logs when connected
+  useEffect(() => {
+    if (isConnected && processInfo?.serviceName && processInfo?.source) {
+      fetchLogs();
+      // Optional: Poll every 10s
+      const interval = setInterval(fetchLogs, 10000);
+      
+      return () => {
+        clearInterval(interval);
+      };
+    }
+  }, [isConnected, processInfo?.serviceName, processInfo?.source]);
+
+  // Hook for CRUD operations
+  const { 
+    content: hookContent, 
+    proxies, 
+    commonConfig,
+    updateCommon,
+    parseError, 
+    addProxy: hookAddProxy, 
+    updateProxy: hookUpdateProxy, 
+    deleteProxy: hookDeleteProxy,
+    generateToml 
+  } = useFrpcConfig(configContent);
+
+  // Server List State
+  const [serverProfiles, setServerProfiles] = useState<ServerProfile[]>(() => {
+    try {
+      const saved = localStorage.getItem('frpc_server_profiles');
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
+  const [serverEditDialogOpen, setServerEditDialogOpen] = useState(false);
+  const [editingServerProfile, setEditingServerProfile] = useState<ServerProfile | null>(null);
+  const [sshEditDialogOpen, setSshEditDialogOpen] = useState(false);
+  const [editingSshProfile, setEditingSshProfile] = useState<SSHConfig | null>(null);
+  
+  const { updateConnection, removeConnection } = useUserStore();
+
+  useEffect(() => {
+    localStorage.setItem('frpc_server_profiles', JSON.stringify(serverProfiles));
+  }, [serverProfiles]);
+
+  const handleAddServer = () => {
+    setEditingServerProfile(null);
+    setServerEditDialogOpen(true);
+  };
+
+  // Merge SSH Connections into Profiles
+  const allProfiles = useMemo(() => {
+    // Map SSH connections to ServerProfile
+    const sshProfiles: ServerProfile[] = savedConnections.map(ssh => ({
+        id: `ssh_${ssh.id}`,
+        name: ssh.name,
+        serverAddr: ssh.host,
+        serverPort: 7000, // Default FRPS port
+        token: ssh.token || '', // Use token from SSH config
+        isSshImport: true, // Custom flag for UI
+        sshId: ssh.id
+    } as any));
+
+    return [...serverProfiles, ...sshProfiles];
+  }, [serverProfiles, savedConnections]);
+
+  const handleEditServer = (profile: ServerProfile) => {
+    if ((profile as any).isSshImport) {
+        const sshId = (profile as any).sshId;
+        const sshConfig = savedConnections.find(c => c.id === sshId);
+        if (sshConfig) {
+            setEditingSshProfile(sshConfig);
+            setSshEditDialogOpen(true);
+        }
+        return;
+    }
+    setEditingServerProfile(profile);
+    setServerEditDialogOpen(true);
+  };
+
+  const handleSaveSsh = (data: SSHConfig) => {
+      if (data.id) {
+          updateConnection(data.id, data);
+      }
+      setSshEditDialogOpen(false);
+  };
+
+  const handleSaveServer = (profile: ServerProfile) => {
+    setServerProfiles(prev => {
+      const exists = prev.some(p => p.id === profile.id);
+      if (exists) {
+        return prev.map(p => p.id === profile.id ? profile : p);
+      }
+      return [...prev, profile];
+    });
+    setServerEditDialogOpen(false);
+    // Note: Saving a profile doesn't change active config, applying it does.
+  };
+
+  const [serverToDelete, setServerToDelete] = useState<string | null>(null);
+  const [serverDeleteDialogOpen, setServerDeleteDialogOpen] = useState(false);
+
+  const handleDeleteServer = (id: string) => {
+      setServerToDelete(id);
+      setServerDeleteDialogOpen(true);
+  };
+
+  const confirmDeleteServer = () => {
+      if (!serverToDelete) return;
+      const id = serverToDelete;
+      
+      if (id.startsWith('ssh_')) {
+          const sshId = id.replace('ssh_', '');
+          removeConnection(sshId);
+      } else {
+          setServerProfiles(prev => prev.filter(p => p.id !== id));
+      }
+      setServerDeleteDialogOpen(false);
+      setServerToDelete(null);
+  };
+
+  const handleApplyServer = (profile: ServerProfile) => {
+      if (confirm(`Apply server profile "${profile.name}"? This will update the [common] configuration.`)) {
+          updateCommon({
+              serverAddr: profile.serverAddr,
+              serverPort: profile.serverPort,
+              token: profile.token
+          });
+          triggerSave();
+          setRestartRequired(true);
+      }
+  };
+
+  // CRUD States
+  const [selectionMode, setSelectionMode] = useState(false);
+  const [selectedProxies, setSelectedProxies] = useState<Set<string>>(new Set());
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [editingProxy, setEditingProxy] = useState<ProxyConfig | null>(null);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [proxyToDelete, setProxyToDelete] = useState<string | null>(null); // For single delete
+  const [batchDeleteDialogOpen, setBatchDeleteDialogOpen] = useState(false);
+
+  const existingNames = useMemo(() => new Set(proxies.map(p => p.name)), [proxies]);
 
   useEffect(() => {
     if (!isConnected) {
@@ -33,14 +267,18 @@ export default function Dashboard() {
 
   const loadConfig = async (path?: string) => {
     const targetPath = path || processInfo?.configPath;
-    if (!targetPath) return;
+    if (!targetPath || !isConnected) return;
     
     setLoadingConfig(true);
     try {
       const res = await ApiClient.getConfig(targetPath);
       setConfigContent(res.content);
-    } catch (error) {
+    } catch (error: any) {
       console.error(error);
+      if (error.message === 'Not connected' || error.message?.includes('Not connected')) {
+          disconnect();
+          navigate('/');
+      }
     } finally {
       setLoadingConfig(false);
     }
@@ -83,29 +321,121 @@ export default function Dashboard() {
     setServiceLoading(true);
     try {
       await ApiClient.serviceControl(action, processInfo.source, processInfo.serviceName, processInfo.requiresSudo);
-      // Ideally re-scan status
-      alert(`Service ${action} command sent successfully`);
+      showFeedback('success', `Service ${action} command sent successfully`);
+      if (action === 'restart') {
+        setRestartRequired(false);
+      }
       setTimeout(handleRescan, 2000);
     } catch (error: any) {
       console.error(error);
-      alert(`Failed to control service: ${error.message}`);
+      showFeedback('error', `Failed to control service: ${error.message}`);
     } finally {
       setServiceLoading(false);
     }
   };
 
   const handleManualLoad = async () => {
-    if (!manualConfigPath) return;
-    setManualLoading(true);
+    // Manual load logic removed/deprecated as requested for new header design
+    // But keeping logic just in case we need it back or for advanced mode
+    const path = prompt("Config Path:", "/etc/frp/frpc.toml");
+    if (!path) return;
     try {
-      await loadConfig(manualConfigPath);
-      setManualMode(true);
+        await loadConfig(path);
     } catch (e: any) {
-      alert(`加载失败: ${e.message}`);
-    } finally {
-      setManualLoading(false);
+        alert(e.message);
     }
   };
+
+  // Helper to save config to disk
+  const saveToDisk = async () => {
+    const path = processInfo?.configPath;
+    if (!path) {
+      alert("No config path found!");
+      return;
+    }
+    const newContent = generateToml();
+    try {
+      await ApiClient.saveConfig(path, newContent);
+      setConfigContent(newContent); // Update local state to reflect saved content (and re-init hook)
+    } catch (e: any) {
+      alert(`Save failed: ${e.message}`);
+    }
+  };
+
+  // CRUD Handlers
+  const handleToggleSelection = (name: string) => {
+    setSelectedProxies(prev => {
+      const next = new Set(prev);
+      if (next.has(name)) next.delete(name);
+      else next.add(name);
+      return next;
+    });
+  };
+
+  const handleAddProxy = () => {
+    setEditingProxy(null);
+    setEditDialogOpen(true);
+  };
+
+  const handleEditProxy = (proxy: ProxyConfig) => {
+    setEditingProxy(proxy);
+    setEditDialogOpen(true);
+  };
+
+  const handleSaveProxy = async (data: ProxyConfig) => {
+    if (editingProxy) {
+      // Update
+      hookUpdateProxy(editingProxy.name, data);
+    } else {
+      // Add
+      hookAddProxy(data);
+    }
+    setEditDialogOpen(false);
+    triggerSave();
+    setRestartRequired(true);
+  };
+  
+  const handleDeleteSingle = (name: string) => {
+    setProxyToDelete(name);
+    setDeleteDialogOpen(true);
+  };
+
+  const confirmDeleteSingle = async () => {
+    if (proxyToDelete) {
+      hookDeleteProxy(proxyToDelete);
+      setDeleteDialogOpen(false);
+      setProxyToDelete(null);
+      triggerSave();
+      setRestartRequired(true);
+    }
+  };
+
+  const handleDeleteBatch = () => {
+    setBatchDeleteDialogOpen(true);
+  };
+
+  const confirmDeleteBatch = async () => {
+    // We need deleteProxies in hook or loop
+    // hookDeleteProxy only takes one name.
+    // We can iterate.
+    selectedProxies.forEach(name => hookDeleteProxy(name));
+    setSelectedProxies(new Set());
+    setSelectionMode(false);
+    setBatchDeleteDialogOpen(false);
+    triggerSave();
+    setRestartRequired(true);
+  };
+
+  const [savePending, setSavePending] = useState(false);
+  
+  useEffect(() => {
+      if (savePending) {
+          saveToDisk();
+          setSavePending(false);
+      }
+  }, [proxies, commonConfig, savePending]);
+
+  const triggerSave = () => setSavePending(true);
 
   if (!isConnected) {
     return (
@@ -231,7 +561,7 @@ export default function Dashboard() {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-6">
-      <div className="max-w-7xl mx-auto space-y-8">
+      <div className="max-w-7xl mx-auto space-y-6">
         <header className="flex justify-between items-center">
             <h1 className="text-2xl font-bold">FRPC Manager Dashboard</h1>
             <div className="space-x-2">
@@ -242,53 +572,122 @@ export default function Dashboard() {
         </header>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {/* Status Card */}
-        <Card>
+        {/* Card 1: Health & Uptime */}
+        <Card className="flex flex-col h-64">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Service Status</CardTitle>
-            <Activity className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold capitalize">
-              {processInfo?.status || 'Unknown'}
+            <CardTitle className="text-sm font-medium">Service Health</CardTitle>
+            <div className={`flex items-center gap-2`}>
+                <span className="text-xs text-muted-foreground font-mono">{processInfo?.version ? `v${processInfo.version}` : ''}</span>
+                <div className={`h-2.5 w-2.5 rounded-full ${processInfo?.status === 'running' ? 'bg-green-500 animate-pulse' : 'bg-red-500'}`} />
             </div>
-            <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
-              {processInfo?.source === 'docker' ? <Box className="h-3 w-3" /> : <Server className="h-3 w-3" />}
-              {processInfo?.source ? `via ${processInfo.source}` : ''} 
-              {processInfo?.pid ? ` (PID/ID: ${processInfo.pid.substring(0, 12)})` : ''}
-            </p>
+          </CardHeader>
+          <CardContent className="flex-1 flex flex-col justify-center">
+             <div className="space-y-4">
+                <div>
+                    <div className="text-3xl font-bold text-foreground capitalize">
+                        {processInfo?.status || 'Unknown'}
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-1">
+                        Current Status
+                    </p>
+                </div>
+                
+                <div className="pt-4 border-t">
+                    <div className="flex items-center gap-2 text-sm font-medium text-foreground">
+                        <Activity className="h-4 w-4 text-muted-foreground shrink-0" />
+                        {processInfo?.startTimestamp ? (
+                            <UptimeDisplay startTimestamp={processInfo.startTimestamp} />
+                        ) : (
+                            <span className="truncate">{processInfo?.uptime || 'N/A'}</span>
+                        )}
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-1 pl-6">
+                        Uptime / Since
+                    </p>
+                </div>
+             </div>
           </CardContent>
         </Card>
 
-        {/* Config Path Card */}
-        <Card>
+        {/* Card 2: Connection Topology */}
+        <Card className="flex flex-col h-64">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Config File</CardTitle>
-            <FileText className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-sm font-medium">Connection Info</CardTitle>
+            <Globe className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
-          <CardContent>
-            <div className="text-sm font-medium break-all">
-              {processInfo?.configPath || 'Not detected'}
-            </div>
-            <p className="text-xs text-muted-foreground mt-1">
-              {processInfo?.configPath ? 'Found via process args' : 'Try manual selection'}
-            </p>
+          <CardContent className="flex-1 flex flex-col justify-center">
+             <div className="space-y-4">
+                <div>
+                    <div className="text-2xl font-bold text-foreground break-all">
+                        {commonConfig.serverAddr || '127.0.0.1'}
+                        <span className="text-lg text-muted-foreground font-normal">:{commonConfig.serverPort || 7000}</span>
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-1">
+                        Active Server Address
+                    </p>
+                </div>
+
+                <div className="pt-4 border-t space-y-3">
+                    <div className="flex items-center justify-between text-sm">
+                        <span className="text-muted-foreground flex items-center gap-2">
+                            <Lock className="h-3 w-3" /> Token
+                        </span>
+                        <span className="font-mono bg-muted px-1.5 py-0.5 rounded text-xs">
+                            {commonConfig.token ? '******' : 'None'}
+                        </span>
+                    </div>
+                    <div className="flex items-center justify-between text-sm">
+                        <span className="text-muted-foreground flex items-center gap-2">
+                            <FileText className="h-3 w-3" /> Config
+                        </span>
+                        <span className="font-mono text-xs truncate max-w-[150px]" title={processInfo?.configPath}>
+                            {processInfo?.configPath ? processInfo.configPath.split('/').pop() : 'Unknown'}
+                        </span>
+                    </div>
+                </div>
+             </div>
           </CardContent>
         </Card>
         
-        {/* Service Info */}
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-             <CardTitle className="text-sm font-medium">Service Info</CardTitle>
-             <Terminal className="h-4 w-4 text-muted-foreground" />
+        {/* Card 3: Real-time Logs */}
+        <Card className="flex flex-col h-64 bg-slate-950 text-slate-50 border-slate-800">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 border-b border-slate-800/50">
+             <CardTitle className="text-sm font-medium text-slate-400 flex items-center gap-2">
+                <Terminal className="h-4 w-4" />
+                Recent Logs
+             </CardTitle>
+             <Badge variant="outline" className="text-[10px] h-5 border-slate-700 text-slate-400">
+                 Live
+             </Badge>
           </CardHeader>
-          <CardContent>
-             <div className="text-sm font-medium break-all">
-                 {processInfo?.serviceName || 'N/A'}
+          <CardContent className="flex-1 p-0 overflow-hidden relative group bg-black">
+             <div className="absolute inset-0 p-4 font-mono text-[11px] overflow-auto scrollbar-thin scrollbar-thumb-slate-700 scrollbar-track-transparent">
+                 {logsLoading && !logs ? (
+                     <div className="flex items-center justify-center h-full text-slate-500">
+                         <Loader2 className="h-5 w-5 animate-spin mr-2" />
+                         Fetching logs...
+                     </div>
+                 ) : (
+                     <div className="space-y-1">
+                         {logs ? logs.split('\n').filter(line => line.trim()).map((line, i) => {
+                             // Highlight errors
+                             const isError = line.includes('[E]') || line.toLowerCase().includes('error');
+                             return (
+                                 <div key={i} className={`whitespace-pre-wrap break-all leading-tight py-0.5 border-b border-white/5 pb-1 ${isError ? 'text-red-400' : 'text-slate-300'}`}>
+                                     {line}
+                                 </div>
+                             );
+                         }) : (
+                             <div className="text-slate-500">No logs available.</div>
+                         )}
+                     </div>
+                 )}
              </div>
-             <p className="text-xs text-muted-foreground mt-1">
-                 {processInfo?.command ? `Command: ${processInfo.command.substring(0, 30)}...` : 'Service Name'}
-             </p>
+             <div className="absolute bottom-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                 <Button size="xs" variant="secondary" className="h-6 text-[10px] bg-slate-800 text-slate-300 hover:bg-slate-700 hover:text-white" onClick={fetchLogs}>
+                     <RefreshCw className="h-3 w-3 mr-1" /> Refresh
+                 </Button>
+             </div>
           </CardContent>
         </Card>
 
@@ -311,7 +710,11 @@ export default function Dashboard() {
                       </TabsTrigger>
                       <TabsTrigger value="edit">
                           <Settings className="h-4 w-4 mr-2" />
-                          Server Settings
+                          Config Editor
+                      </TabsTrigger>
+                      <TabsTrigger value="servers">
+                          <Server className="h-4 w-4 mr-2" />
+                          Server List
                       </TabsTrigger>
                     </TabsList>
                 </div>
@@ -319,27 +722,88 @@ export default function Dashboard() {
                 <TabsContent value="proxies" className="mt-0">
                     <div className="space-y-6">
                         <div className="flex items-center justify-end gap-2">
-                             <Button size="sm" variant="outline" className="h-8">
+                             <Button size="sm" variant="outline" className="h-8" onClick={handleAddProxy}>
                                 <Plus className="h-3.5 w-3.5 mr-1" />
                                 Add Proxy
                              </Button>
-                             <Button size="sm" variant="outline" className="h-8" onClick={() => handleServiceAction('restart')} disabled={true}>
+
+                             {selectionMode ? (
+                                <>
+                                  <Button 
+                                    size="sm" 
+                                    variant="destructive" 
+                                    className="h-8"
+                                    onClick={handleDeleteBatch}
+                                    disabled={selectedProxies.size === 0}
+                                  >
+                                    <Trash2 className="h-3.5 w-3.5 mr-1" />
+                                    Delete ({selectedProxies.size})
+                                  </Button>
+                                  <Button size="sm" variant="ghost" className="h-8" onClick={() => {
+                                    setSelectionMode(false);
+                                    setSelectedProxies(new Set());
+                                  }}>
+                                    Cancel
+                                  </Button>
+                                </>
+                             ) : (
+                               <Button 
+                                 size="sm" 
+                                 variant="ghost" 
+                                 className="h-8"
+                                 onClick={() => setSelectionMode(true)}
+                               >
+                                 <CheckSquare className="h-3.5 w-3.5 mr-1" />
+                                 Select
+                               </Button>
+                             )}
+                             
+                             <Button size="sm" variant="outline" className="h-8" onClick={() => handleServiceAction('restart')} disabled={serviceLoading || !restartRequired}>
                                 {serviceLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" /> : <RotateCw className="h-3.5 w-3.5 mr-1" />}
                                 Restart Service
                              </Button>
                         </div>
-                        <ProxyListOverview content={configContent} />
+                        <ProxyListOverview 
+                          proxies={proxies} 
+                          parseError={parseError}
+                          selectionMode={selectionMode}
+                          selectedProxies={selectedProxies}
+                          onToggleSelection={handleToggleSelection}
+                          onEdit={handleEditProxy}
+                          onDelete={handleDeleteSingle}
+                          onAdd={handleAddProxy}
+                        />
+                    </div>
+                </TabsContent>
+                
+                <TabsContent value="servers" className="mt-0">
+                    <div className="space-y-6">
+                      <div className="flex items-center justify-end gap-2">
+                           <Button size="sm" variant="outline" className="h-8" onClick={handleAddServer}>
+                              <Plus className="h-3.5 w-3.5 mr-1" />
+                              Add Server
+                           </Button>
+                      </div>
+                      <ServerListOverview 
+                        profiles={allProfiles}
+                        activeConfig={commonConfig}
+                        onAdd={handleAddServer}
+                        onEdit={handleEditServer}
+                        onDelete={(id) => handleDeleteServer(id)}
+                        onApply={handleApplyServer}
+                      />
                     </div>
                 </TabsContent>
                 
                 <TabsContent value="edit" className="mt-0">
                     {processInfo?.configPath && (
                         <ConfigEditor 
-                            initialContent={configContent} 
+                            initialContent={hookContent} 
                             path={processInfo.configPath}
                             defaultTab="server"
                             hideTabs={true}
-                            onSave={() => handleServiceAction('restart')} 
+                            onSave={() => handleServiceAction('restart')}
+                            onConfigSaved={() => setRestartRequired(true)} 
                         />
                     )}
                 </TabsContent>
@@ -348,6 +812,92 @@ export default function Dashboard() {
           </CardContent>
         </Card>
       </div>
+
+      <ProxyEditDialog 
+        open={editDialogOpen} 
+        onOpenChange={setEditDialogOpen}
+        initialData={editingProxy}
+        onSave={handleSaveProxy}
+        existingNames={existingNames}
+      />
+
+      <ServerEditDialog 
+        open={serverEditDialogOpen} 
+        onOpenChange={setServerEditDialogOpen}
+        initialData={editingServerProfile}
+        onSave={handleSaveServer}
+      />
+      
+      <SshEditDialog
+        open={sshEditDialogOpen}
+        onOpenChange={setSshEditDialogOpen}
+        initialData={editingSshProfile}
+        onSave={handleSaveSsh}
+      />
+
+          <AlertDialog open={feedbackOpen} onOpenChange={setFeedbackOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className={feedbackType === 'success' ? 'text-green-600' : 'text-red-600'}>
+              {feedbackType === 'success' ? 'Success' : 'Error'}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {feedbackMessage}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogAction onClick={() => setFeedbackOpen(false)} className={feedbackType === 'success' ? 'bg-green-600 hover:bg-green-700' : 'bg-red-600 hover:bg-red-700'}>
+              OK
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete the proxy "{proxyToDelete}".
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDeleteSingle} className="bg-red-600 hover:bg-red-700">Delete</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={serverDeleteDialogOpen} onOpenChange={setServerDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete the server profile.
+              {serverToDelete?.startsWith('ssh_') && " Note: This will also remove the saved SSH connection."}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDeleteServer} className="bg-red-600 hover:bg-red-700">Delete</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={batchDeleteDialogOpen} onOpenChange={setBatchDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete {selectedProxies.size} proxies.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDeleteBatch} className="bg-red-600 hover:bg-red-700">Delete All</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

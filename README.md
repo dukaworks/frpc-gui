@@ -1,6 +1,6 @@
-# FRPC GUI (0.1.0)
+# FRPC GUI (0.1.5)
 
-一个通过 SSH 管理远程 `frpc` 的 Web GUI：连接服务器 → 自动扫描 `frpc`（Docker / systemd / 进程）→ 读取/编辑配置 → 保存并重启服务。
+A modern, web-based GUI for configuring and managing FRPC (Fast Reverse Proxy Client).
 
 ## 功能
 - SSH 连接并建立会话（`x-session-id`）

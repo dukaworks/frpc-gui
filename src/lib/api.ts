@@ -74,6 +74,10 @@ export class ApiClient {
     });
   }
 
+  static async fetchLogs(type: string, serviceName: string, lines = 50) {
+    return this.request(`/logs?type=${encodeURIComponent(type)}&serviceName=${encodeURIComponent(serviceName)}&lines=${lines}`);
+  }
+
   static async scan() {
       return this.request('/scan', { method: 'POST' });
   }

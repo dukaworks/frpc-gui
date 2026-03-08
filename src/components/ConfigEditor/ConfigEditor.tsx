@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Loader2, Save, Code, AlertTriangle, Server, Eye, EyeOff } from 'lucide-react';
+import { Loader2, Save, Code, AlertTriangle, Server, Eye, EyeOff, Lock, Unlock } from 'lucide-react';
 import { useFrpcConfig } from '@/hooks/useFrpcConfig';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 
@@ -13,6 +13,7 @@ interface ConfigEditorProps {
   initialContent: string;
   path: string;
   onSave?: () => void;
+  onConfigSaved?: () => void;
   defaultTab?: 'server' | 'code';
   hideTabs?: boolean;
 }
@@ -22,7 +23,7 @@ function toNumberOrUndefined(v: unknown) {
   return Number.isFinite(n) ? n : undefined;
 }
 
-export function ConfigEditor({ initialContent, path, onSave, defaultTab = 'server', hideTabs = false }: ConfigEditorProps) {
+export function ConfigEditor({ initialContent, path, onSave, onConfigSaved, defaultTab = 'server', hideTabs = false }: ConfigEditorProps) {
   const {
     content: hookContent,
     setContent: setHookContent,
@@ -39,6 +40,7 @@ export function ConfigEditor({ initialContent, path, onSave, defaultTab = 'serve
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [showToken, setShowToken] = useState(false);
+  const [isLocked, setIsLocked] = useState(true);
 
   // Sync code content when hook content changes (external update or re-parse)
   useEffect(() => {
@@ -55,10 +57,12 @@ export function ConfigEditor({ initialContent, path, onSave, defaultTab = 'serve
       setHookContent(codeContent);
       refresh(); // trigger re-parse immediately just in case
     }
-    setActiveTab(val);
+    setActiveTab(val as 'code' | 'server');
   };
 
   const handleSave = async (restart: boolean = true) => {
+    if (isLocked) return;
+    
     setSaving(true);
     setError('');
     setSuccess('');
@@ -73,6 +77,10 @@ export function ConfigEditor({ initialContent, path, onSave, defaultTab = 'serve
 
     try {
       await ApiClient.saveConfig(path, contentToSave);
+      
+      if (onConfigSaved) {
+        onConfigSaved();
+      }
       
       if (restart && onSave) {
          // If restart is requested, we call onSave which triggers restart in Dashboard
@@ -102,7 +110,24 @@ export function ConfigEditor({ initialContent, path, onSave, defaultTab = 'serve
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between bg-card p-3 rounded-lg border shadow-sm">
           <div className="flex items-center justify-between sm:justify-start gap-3">
             <div className="flex flex-col">
-                <h3 className="text-lg font-medium">配置编辑器</h3>
+                <div className="flex items-center gap-2">
+                    <h3 className="text-lg font-medium">配置编辑器</h3>
+                    <Tooltip>
+                        <TooltipTrigger asChild>
+                            <Button 
+                                variant="ghost" 
+                                size="sm" 
+                                className="h-6 w-6 p-0 rounded-full"
+                                onClick={() => setIsLocked(!isLocked)}
+                            >
+                                {isLocked ? <Lock className="h-3 w-3 text-muted-foreground" /> : <Unlock className="h-3 w-3 text-orange-500" />}
+                            </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                            {isLocked ? 'Click to Unlock Editing' : 'Unlocked - Careful!'}
+                        </TooltipContent>
+                    </Tooltip>
+                </div>
                 {path && <p className="text-xs text-muted-foreground font-mono">{path}</p>}
             </div>
           </div>
@@ -110,7 +135,7 @@ export function ConfigEditor({ initialContent, path, onSave, defaultTab = 'serve
           <div className="flex gap-2">
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <Button onClick={() => handleSave(false)} disabled={saving} variant="outline" className="border-primary text-primary hover:bg-primary/10">
+                  <Button onClick={() => handleSave(false)} disabled={saving || isLocked} variant="outline" className="border-primary text-primary hover:bg-primary/10">
                      {saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
                      Save
                   </Button>
@@ -120,7 +145,7 @@ export function ConfigEditor({ initialContent, path, onSave, defaultTab = 'serve
 
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <Button onClick={() => handleSave(true)} disabled={saving} className="min-w-[120px]" variant="outline">
+                  <Button onClick={() => handleSave(true)} disabled={saving || isLocked} className="min-w-[120px]" variant="outline">
                      {saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
                      {saving ? 'Saving...' : 'Save & Restart'}
                   </Button>
@@ -132,26 +157,28 @@ export function ConfigEditor({ initialContent, path, onSave, defaultTab = 'serve
       )}
       
       {hideTabs && (
-          <div className="flex justify-end mb-2 gap-2">
-               <Tooltip>
-                 <TooltipTrigger asChild>
-                   <Button onClick={() => handleSave(false)} disabled={saving} size="sm" variant="outline" className="border-primary text-primary hover:bg-primary/10">
-                    {saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
-                    Save
-                   </Button>
-                 </TooltipTrigger>
-                 <TooltipContent>Save configuration only</TooltipContent>
-               </Tooltip>
+          <div className="flex justify-end items-center mb-2">
+               <div className="flex gap-2">
+                   <Tooltip>
+                     <TooltipTrigger asChild>
+                       <Button onClick={() => handleSave(false)} disabled={saving || isLocked} size="sm" variant="outline" className="border-primary text-primary hover:bg-primary/10">
+                        {saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
+                        Save
+                       </Button>
+                     </TooltipTrigger>
+                     <TooltipContent>Save configuration only</TooltipContent>
+                   </Tooltip>
 
-               <Tooltip>
-                 <TooltipTrigger asChild>
-                   <Button onClick={() => handleSave(true)} disabled={saving} size="sm" className="min-w-[120px]" variant="outline">
-                    {saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
-                    {saving ? 'Saving…' : 'Save & Restart'}
-                  </Button>
-                 </TooltipTrigger>
-                 <TooltipContent>Save configuration and restart service</TooltipContent>
-               </Tooltip>
+                   <Tooltip>
+                     <TooltipTrigger asChild>
+                       <Button onClick={() => handleSave(true)} disabled={saving || isLocked} size="sm" className="min-w-[120px]" variant="outline">
+                        {saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
+                        {saving ? 'Saving…' : 'Save & Restart'}
+                      </Button>
+                     </TooltipTrigger>
+                     <TooltipContent>Save configuration and restart service</TooltipContent>
+                   </Tooltip>
+               </div>
           </div>
       )}
 
@@ -184,13 +211,29 @@ export function ConfigEditor({ initialContent, path, onSave, defaultTab = 'serve
             )}
         </div>
 
-        <TabsContent value="server" className="mt-0">
+        <TabsContent value="server" className="mt-0 relative">
+            {isLocked && <div className="absolute inset-0 bg-white/50 z-10 cursor-not-allowed" />}
             <div className="grid grid-cols-12 gap-4">
                 <div className="hidden md:block md:col-span-3"></div>
                 <div className="col-span-12 md:col-span-6">
                     <Card>
-                        <CardHeader>
+                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                             <CardTitle>Server Connection Settings</CardTitle>
+                            <Tooltip>
+                                <TooltipTrigger asChild>
+                                    <Button 
+                                        variant="ghost" 
+                                        size="sm" 
+                                        className="h-8 w-8 p-0"
+                                        onClick={() => setIsLocked(!isLocked)}
+                                    >
+                                        {isLocked ? <Lock className="h-4 w-4 text-muted-foreground" /> : <Unlock className="h-4 w-4 text-orange-500" />}
+                                    </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                    {isLocked ? 'Click to Unlock Editing' : 'Unlocked - Careful!'}
+                                </TooltipContent>
+                            </Tooltip>
                         </CardHeader>
                         <CardContent className="space-y-4">
                             <div className="space-y-2">
@@ -199,6 +242,7 @@ export function ConfigEditor({ initialContent, path, onSave, defaultTab = 'serve
                                     value={commonConfig.serverAddr} 
                                     onChange={(e) => updateCommon('serverAddr', e.target.value)} 
                                     placeholder="Frps Server IP or Domain" 
+                                    disabled={isLocked}
                                 />
                             </div>
                             <div className="space-y-2">
@@ -208,6 +252,7 @@ export function ConfigEditor({ initialContent, path, onSave, defaultTab = 'serve
                                     value={commonConfig.serverPort}
                                     onChange={(e) => updateCommon('serverPort', toNumberOrUndefined(e.target.value) ?? 0)}
                                     placeholder="7000"
+                                    disabled={isLocked}
                                 />
                             </div>
                             <div className="space-y-2">
@@ -219,6 +264,7 @@ export function ConfigEditor({ initialContent, path, onSave, defaultTab = 'serve
                                 onChange={(e) => updateCommon('token' as any, e.target.value)}
                                 placeholder="Optional auth token"
                                 className="pr-10"
+                                disabled={isLocked}
                             />
                             <Button
                                 type="button"
@@ -226,6 +272,7 @@ export function ConfigEditor({ initialContent, path, onSave, defaultTab = 'serve
                                 size="sm"
                                 className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
                                 onClick={() => setShowToken(!showToken)}
+                                disabled={isLocked}
                             >
                                 {showToken ? (
                                     <EyeOff className="h-4 w-4 text-muted-foreground" />
@@ -244,10 +291,11 @@ export function ConfigEditor({ initialContent, path, onSave, defaultTab = 'serve
 
         <TabsContent value="code" className="flex-1 mt-0 h-full min-h-[500px]">
             <textarea
-                className="w-full h-full p-4 font-mono text-sm bg-slate-950 text-slate-50 rounded-md resize-none focus:outline-none focus:ring-2 focus:ring-primary"
+                className={`w-full h-full p-4 font-mono text-sm bg-slate-950 text-slate-50 rounded-md resize-none focus:outline-none focus:ring-2 focus:ring-primary ${isLocked ? 'opacity-80 cursor-not-allowed' : ''}`}
                 value={codeContent}
                 onChange={(e) => setCodeContent(e.target.value)}
                 spellCheck={false}
+                disabled={isLocked}
             />
         </TabsContent>
       </Tabs>
