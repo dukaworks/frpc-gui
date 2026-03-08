@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import Connect from './pages/Connect';
 import ConnectSimple from './pages/ConnectSimple';
 import Dashboard from './pages/Dashboard';
+import { TooltipProvider } from '@/components/ui/tooltip';
 
 class ErrorBoundary extends React.Component<
   { children: React.ReactNode },
@@ -65,16 +66,18 @@ class ErrorBoundary extends React.Component<
 
 function App() {
   return (
-    <ErrorBoundary>
-      <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<Connect />} />
-          <Route path="/simple" element={<ConnectSimple />} />
-          <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
-      </BrowserRouter>
-    </ErrorBoundary>
+    <TooltipProvider>
+      <ErrorBoundary>
+        <BrowserRouter>
+          <Routes>
+            <Route path="/" element={<Connect />} />
+            <Route path="/simple" element={<ConnectSimple />} />
+            <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
+        </BrowserRouter>
+      </ErrorBoundary>
+    </TooltipProvider>
   );
 }
 

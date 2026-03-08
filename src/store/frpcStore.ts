@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { FrpcProcessInfo } from '../shared/types';
+import { ApiClient } from '@/lib/api';
 
 interface FrpcState {
   isConnected: boolean;
@@ -20,25 +21,31 @@ export const useFrpcStore = create<FrpcState>()(
       sessionId: null,
       processInfo: null,
       configPath: null,
-      setConnected: (sessionId, processInfo) =>
+      setConnected: (sessionId, processInfo) => {
+        ApiClient.setSessionId(sessionId);
         set({
           isConnected: true,
           sessionId,
           processInfo,
           configPath: processInfo?.configPath || null,
-        }),
+        });
+      },
       setProcessInfo: (processInfo) =>
         set({
           processInfo,
           configPath: processInfo?.configPath || null,
         }),
-      disconnect: () =>
+      disconnect: () => {
+        // First clear the API session to prevent re-auto-connect
+        ApiClient.setSessionId('');
+        // Then update the store state
         set({
           isConnected: false,
           sessionId: null,
           processInfo: null,
           configPath: null,
-        }),
+        });
+      },
       setConfigPath: (path) => set({ configPath: path }),
     }),
     {
