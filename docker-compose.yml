@@ -2,8 +2,8 @@ version: '3.8'
 
 services:
   frpc-gui:
-    build: .
-    image: frpc-gui:latest
+    # Use the official image from GHCR
+    image: ghcr.io/dukaworks/frpc-gui:latest
     container_name: frpc-gui
     ports:
       - "3000:3000"
