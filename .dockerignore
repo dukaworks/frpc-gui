@@ -1,0 +1,35 @@
+# Dependency directories
+node_modules
+.pnpm-store
+
+# Distribution directories
+dist
+dist-server
+
+# Environment variables
+.env
+.env.*
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Git
+.git
+.gitignore
+
+# Docker
+Dockerfile
+.dockerignore
+docker-compose.yml
+
+# IDEs
+.vscode
+.idea
+.trae
+
+# OS
+.DS_Store
+Thumbs.db
