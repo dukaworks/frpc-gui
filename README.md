@@ -4,6 +4,8 @@
 ![Version](https://img.shields.io/badge/version-0.1.5-green.svg)
 [![Docker Build & Publish](https://github.com/dukaworks/frpc-gui/actions/workflows/docker-publish.yml/badge.svg)](https://github.com/dukaworks/frpc-gui/actions/workflows/docker-publish.yml)
 
+**English** | [中文](./README_zh.md)
+
 **Web-based GUI for managing FRPC configurations remotely via SSH.**
 
 FRPC GUI allows you to manage your FRPC (Fast Reverse Proxy Client) configuration files visually. Instead of editing TOML/INI files manually on the server, you can use this modern web interface to add, edit, and delete proxies, manage multiple servers, and view real-time logs.
