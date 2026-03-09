@@ -1,30 +1,65 @@
-# FRPC GUI (0.1.5)
+# FRPC GUI
 
-A modern, web-based GUI for configuring and managing FRPC (Fast Reverse Proxy Client).
+![License](https://img.shields.io/badge/license-MIT-blue.svg)
+![Version](https://img.shields.io/badge/version-0.1.5-green.svg)
+![Build Status](https://img.shields.io/badge/build-passing-brightgreen.svg)
 
-## 功能
-- SSH 连接并建立会话（`x-session-id`）
-- 自动扫描 `frpc` 运行来源与配置文件路径
-- Dashboard 查看状态与配置路径
-- 配置读取与保存
-- 可视化代理 CRUD（增删改查） + 源码编辑双模式
+**Web-based GUI for managing FRPC configurations remotely via SSH.**
 
-## 本地开发
+FRPC GUI allows you to manage your FRPC (Fast Reverse Proxy Client) configuration files visually. Instead of editing TOML/INI files manually on the server, you can use this modern web interface to add, edit, and delete proxies, manage multiple servers, and view real-time logs.
 
-安装依赖：
+## Features
+
+*   **Remote Management**: Connect to any server running FRPC via SSH.
+*   **Visual Configuration**: User-friendly form-based editor for FRPC proxies.
+*   **Full CRUD Support**: Add, Edit, Delete (Single/Batch) proxies easily.
+*   **Multi-Server Support**: Save and switch between multiple FRPC server profiles.
+*   **Real-time Logs**: View live logs from the running FRPC service (Docker, Systemd, or Process).
+*   **Safety First**: Built-in configuration backup and "Restart Service" safety checks.
+*   **TOML Support**: Native support for the modern TOML configuration format.
+
+## Quick Start
+
+### Docker (Recommended)
+
 ```bash
-pnpm i
+docker run -d \
+  --name frpc-gui \
+  -p 3001:3001 \
+  -v /etc/frp:/etc/frp \
+  ghcr.io/yourname/frpc-gui:latest
 ```
 
-启动前后端（前端 Vite + 后端 Express）：
-```bash
-pnpm dev
-```
+Access the dashboard at `http://localhost:3001`.
 
-默认：
-- 前端：`http://localhost:5173`（如被占用会自动换端口）
-- 后端：`http://localhost:3001`
+### Manual Installation
 
-## 目录结构
-- `src/` 前端
-- `api/` 后端（SSH、扫描、配置读写、服务控制）
+1.  Clone the repository:
+    ```bash
+    git clone https://github.com/yourname/frpc-gui.git
+    cd frpc-gui
+    ```
+
+2.  Install dependencies:
+    ```bash
+    npm install
+    ```
+
+3.  Start the development server:
+    ```bash
+    npm run dev
+    ```
+
+## Configuration Reference
+
+A comprehensive sample configuration file is included in this repository to help you understand all available options.
+
+*   [**frpc_sample.toml**](./frpc_sample.toml): Contains examples for TCP, UDP, HTTP, HTTPS, STCP, XTCP, and Plugin configurations.
+
+## Contributing
+
+Contributions are welcome! Please read [CONTRIBUTING.md](./CONTRIBUTING.md) for details on our code of conduct, and the process for submitting pull requests.
+
+## License
+
+This project is licensed under the MIT License - see the [LICENSE](./LICENSE) file for details.
