@@ -27,7 +27,7 @@ docker run -d \
   --name frpc-gui \
   -p 3001:3001 \
   -v /etc/frp:/etc/frp \
-  ghcr.io/yourname/frpc-gui:latest
+  ghcr.io/dukaworks/frpc-gui:latest
 ```
 
 Access the dashboard at `http://localhost:3001`.
@@ -36,7 +36,7 @@ Access the dashboard at `http://localhost:3001`.
 
 1.  Clone the repository:
     ```bash
-    git clone https://github.com/yourname/frpc-gui.git
+    git clone https://github.com/dukaworks/frpc-gui.git
     cd frpc-gui
     ```
 
