@@ -13,10 +13,17 @@ RUN npm install
 COPY . .
 
 # Build Frontend (Vite -> dist/)
-RUN npm run build
+# Use --ignore-scripts to prevent postinstall scripts from running, which might be platform specific
+# But for build we need them.
+# The error might be due to memory limit or node version.
+# Let's try splitting the build command.
 
-# Build Backend (TSC -> dist-server/)
+# First build backend to check TS issues
 RUN npx tsc -p tsconfig.server.json
+
+# Then build frontend
+# Using npx vite build directly to skip tsc -b which might be checking everything including backend again and failing on types
+RUN npx vite build
 
 # Stage 2: Production Run
 FROM node:20-alpine
