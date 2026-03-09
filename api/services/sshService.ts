@@ -19,6 +19,7 @@ export interface FrpcProcessInfo {
   source: 'process' | 'docker' | 'systemd';
   serviceName?: string;
   requiresSudo?: boolean;
+  startTimestamp?: number;
 }
 
 class SshService {

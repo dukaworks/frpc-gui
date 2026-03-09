@@ -8,10 +8,12 @@ interface FrpcState {
   sessionId: string | null;
   processInfo: FrpcProcessInfo | null;
   configPath: string | null;
+  restartRequired: boolean;
   setConnected: (sessionId: string, processInfo: FrpcProcessInfo | null) => void;
   setProcessInfo: (processInfo: FrpcProcessInfo | null) => void;
   disconnect: () => void;
   setConfigPath: (path: string) => void;
+  setRestartRequired: (required: boolean) => void;
 }
 
 export const useFrpcStore = create<FrpcState>()(
@@ -21,6 +23,7 @@ export const useFrpcStore = create<FrpcState>()(
       sessionId: null,
       processInfo: null,
       configPath: null,
+      restartRequired: false,
       setConnected: (sessionId, processInfo) => {
         ApiClient.setSessionId(sessionId);
         set({
@@ -44,9 +47,11 @@ export const useFrpcStore = create<FrpcState>()(
           sessionId: null,
           processInfo: null,
           configPath: null,
+          restartRequired: false,
         });
       },
       setConfigPath: (path) => set({ configPath: path }),
+      setRestartRequired: (required) => set({ restartRequired: required }),
     }),
     {
       name: 'frpc-store',
@@ -55,6 +60,7 @@ export const useFrpcStore = create<FrpcState>()(
         sessionId: state.sessionId,
         processInfo: state.processInfo,
         configPath: state.configPath,
+        restartRequired: state.restartRequired,
       }),
     }
   )

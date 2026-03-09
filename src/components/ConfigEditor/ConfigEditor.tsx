@@ -105,7 +105,7 @@ export function ConfigEditor({ initialContent, path, onSave, onConfigSaved, defa
   };
 
   return (
-    <div className="space-y-4 h-full flex flex-col">
+    <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-4 h-full flex flex-col">
       {!hideTabs && (
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between bg-card p-3 rounded-lg border shadow-sm">
           <div className="flex items-center justify-between sm:justify-start gap-3">
@@ -157,12 +157,37 @@ export function ConfigEditor({ initialContent, path, onSave, onConfigSaved, defa
       )}
       
       {hideTabs && (
-          <div className="flex justify-end items-center mb-2">
+          <div className="flex justify-between items-center mb-4 bg-card p-2 rounded-lg border shadow-sm">
+               <div className="flex items-center gap-2">
+                    <TabsList className="grid w-[200px] grid-cols-2 h-8">
+                        <TabsTrigger value="server" className="text-xs">Server</TabsTrigger>
+                        <TabsTrigger value="code" className="text-xs">Code</TabsTrigger>
+                    </TabsList>
+                    
+                    <div className="w-px h-6 bg-border mx-1" />
+                    
+                    <Tooltip>
+                        <TooltipTrigger asChild>
+                            <Button 
+                                variant="ghost" 
+                                size="sm" 
+                                className="h-8 w-8 p-0"
+                                onClick={() => setIsLocked(!isLocked)}
+                            >
+                                {isLocked ? <Lock className="h-4 w-4 text-muted-foreground" /> : <Unlock className="h-4 w-4 text-orange-500" />}
+                            </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                            {isLocked ? 'Click to Unlock Editing' : 'Unlocked - Careful!'}
+                        </TooltipContent>
+                    </Tooltip>
+               </div>
+
                <div className="flex gap-2">
                    <Tooltip>
                      <TooltipTrigger asChild>
-                       <Button onClick={() => handleSave(false)} disabled={saving || isLocked} size="sm" variant="outline" className="border-primary text-primary hover:bg-primary/10">
-                        {saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
+                       <Button onClick={() => handleSave(false)} disabled={saving || isLocked} size="sm" variant="outline" className="border-primary text-primary hover:bg-primary/10 h-8">
+                        {saving ? <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" /> : <Save className="mr-2 h-3.5 w-3.5" />}
                         Save
                        </Button>
                      </TooltipTrigger>
@@ -171,8 +196,8 @@ export function ConfigEditor({ initialContent, path, onSave, onConfigSaved, defa
 
                    <Tooltip>
                      <TooltipTrigger asChild>
-                       <Button onClick={() => handleSave(true)} disabled={saving || isLocked} size="sm" className="min-w-[120px]" variant="outline">
-                        {saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
+                       <Button onClick={() => handleSave(true)} disabled={saving || isLocked} size="sm" className="min-w-[120px] h-8" variant="outline">
+                        {saving ? <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" /> : <Save className="mr-2 h-3.5 w-3.5" />}
                         {saving ? 'Saving…' : 'Save & Restart'}
                       </Button>
                      </TooltipTrigger>
@@ -195,7 +220,7 @@ export function ConfigEditor({ initialContent, path, onSave, onConfigSaved, defa
       {error && <div className="p-3 text-sm text-red-600 bg-red-50 border border-red-200 rounded-md">{error}</div>}
       {success && <div className="p-3 text-sm text-green-600 bg-green-50 border border-green-200 rounded-md">{success}</div>}
 
-      <Tabs value={activeTab} onValueChange={handleTabChange} className="flex-1 flex flex-col">
+      <div className="flex-1 flex flex-col">
         <div className="flex items-center justify-between mb-4">
             {!hideTabs && (
                 <TabsList>
@@ -219,21 +244,6 @@ export function ConfigEditor({ initialContent, path, onSave, onConfigSaved, defa
                     <Card>
                         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                             <CardTitle>Server Connection Settings</CardTitle>
-                            <Tooltip>
-                                <TooltipTrigger asChild>
-                                    <Button 
-                                        variant="ghost" 
-                                        size="sm" 
-                                        className="h-8 w-8 p-0"
-                                        onClick={() => setIsLocked(!isLocked)}
-                                    >
-                                        {isLocked ? <Lock className="h-4 w-4 text-muted-foreground" /> : <Unlock className="h-4 w-4 text-orange-500" />}
-                                    </Button>
-                                </TooltipTrigger>
-                                <TooltipContent>
-                                    {isLocked ? 'Click to Unlock Editing' : 'Unlocked - Careful!'}
-                                </TooltipContent>
-                            </Tooltip>
                         </CardHeader>
                         <CardContent className="space-y-4">
                             <div className="space-y-2">
@@ -289,16 +299,16 @@ export function ConfigEditor({ initialContent, path, onSave, onConfigSaved, defa
             </div>
         </TabsContent>
 
-        <TabsContent value="code" className="flex-1 mt-0 h-full min-h-[500px]">
+        <TabsContent value="code" className="flex-1 mt-0 h-full min-h-[600px] flex flex-col">
             <textarea
-                className={`w-full h-full p-4 font-mono text-sm bg-slate-950 text-slate-50 rounded-md resize-none focus:outline-none focus:ring-2 focus:ring-primary ${isLocked ? 'opacity-80 cursor-not-allowed' : ''}`}
+                className={`w-full flex-1 p-4 font-mono text-sm bg-slate-950 text-slate-50 rounded-md resize-none focus:outline-none focus:ring-2 focus:ring-primary ${isLocked ? 'opacity-80 cursor-not-allowed' : ''}`}
                 value={codeContent}
                 onChange={(e) => setCodeContent(e.target.value)}
                 spellCheck={false}
                 disabled={isLocked}
             />
         </TabsContent>
-      </Tabs>
-    </div>
+      </div>
+    </Tabs>
   );
 }

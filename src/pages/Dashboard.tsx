@@ -68,13 +68,15 @@ function UptimeDisplay({ startTimestamp }: { startTimestamp: number }) {
 
 export default function Dashboard() {
   const navigate = useNavigate();
-  const { isConnected, processInfo, disconnect, setProcessInfo } = useFrpcStore();
+  const { isConnected, processInfo, disconnect, setProcessInfo, restartRequired, setRestartRequired } = useFrpcStore();
   const { savedConnections } = useUserStore();
   const [configContent, setConfigContent] = useState('');
   const [loadingConfig, setLoadingConfig] = useState(false);
   const [serviceLoading, setServiceLoading] = useState(false);
   const [scanLoading, setScanLoading] = useState(false);
-  const [restartRequired, setRestartRequired] = useState(false);
+  const [manualMode, setManualMode] = useState(false);
+  const [manualConfigPath, setManualConfigPath] = useState('/etc/frp/frpc.toml');
+  const [manualLoading, setManualLoading] = useState(false);
   
   // Feedback Dialog State
   const [feedbackOpen, setFeedbackOpen] = useState(false);
@@ -335,14 +337,15 @@ export default function Dashboard() {
   };
 
   const handleManualLoad = async () => {
-    // Manual load logic removed/deprecated as requested for new header design
-    // But keeping logic just in case we need it back or for advanced mode
-    const path = prompt("Config Path:", "/etc/frp/frpc.toml");
-    if (!path) return;
+    if (!manualConfigPath) return;
+    setManualLoading(true);
     try {
-        await loadConfig(path);
+        await loadConfig(manualConfigPath);
+        setManualMode(true);
     } catch (e: any) {
         alert(e.message);
+    } finally {
+        setManualLoading(false);
     }
   };
 
