@@ -2,7 +2,7 @@
 
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
 ![Version](https://img.shields.io/badge/version-0.1.5-green.svg)
-![Build Status](https://img.shields.io/badge/build-passing-brightgreen.svg)
+[![Docker Build & Publish](https://github.com/dukaworks/frpc-gui/actions/workflows/docker-publish.yml/badge.svg)](https://github.com/dukaworks/frpc-gui/actions/workflows/docker-publish.yml)
 
 **Web-based GUI for managing FRPC configurations remotely via SSH.**
 
@@ -23,18 +23,21 @@ FRPC GUI allows you to manage your FRPC (Fast Reverse Proxy Client) configuratio
 ### Docker (Recommended)
 
 **Option 1: Docker Compose (Easiest)**
+
 ```bash
+# Pull and run the latest official image
 docker-compose up -d
 ```
 Access the dashboard at `http://localhost:3000`.
 
 **Option 2: Docker Run**
+
 ```bash
-docker build -t frpc-gui .
 docker run -d \
   --name frpc-gui \
   -p 3000:3000 \
-  frpc-gui
+  -v /path/to/your/frpc.toml:/etc/frp/frpc.toml \
+  ghcr.io/dukaworks/frpc-gui:latest
 ```
 
 ### Manual Installation
