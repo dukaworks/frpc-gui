@@ -22,15 +22,20 @@ FRPC GUI allows you to manage your FRPC (Fast Reverse Proxy Client) configuratio
 
 ### Docker (Recommended)
 
+**Option 1: Docker Compose (Easiest)**
 ```bash
+docker-compose up -d
+```
+Access the dashboard at `http://localhost:3000`.
+
+**Option 2: Docker Run**
+```bash
+docker build -t frpc-gui .
 docker run -d \
   --name frpc-gui \
-  -p 3001:3001 \
-  -v /etc/frp:/etc/frp \
-  ghcr.io/dukaworks/frpc-gui:latest
+  -p 3000:3000 \
+  frpc-gui
 ```
-
-Access the dashboard at `http://localhost:3001`.
 
 ### Manual Installation
 

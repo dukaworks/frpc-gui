@@ -57,13 +57,23 @@ app.use((error: Error, req: Request, res: Response, next: NextFunction) => {
 })
 
 /**
- * 404 handler
+ * 404 handler / Static Serve
  */
-app.use((req: Request, res: Response) => {
-  res.status(404).json({
-    success: false,
-    error: 'API not found',
+if (process.env.NODE_ENV === 'production') {
+  // Serve static files from the frontend build
+  app.use(express.static(path.join(__dirname, '../dist')))
+
+  // Handle SPA routing: return index.html for any unknown route
+  app.get('*', (req: Request, res: Response) => {
+    res.sendFile(path.join(__dirname, '../dist/index.html'))
   })
-})
+} else {
+  app.use((req: Request, res: Response) => {
+    res.status(404).json({
+      success: false,
+      error: 'API not found',
+    })
+  })
+}
 
 export default app
