@@ -1,21 +1,26 @@
 # FRPC GUI
 
-<div align="center">
+<p align="center">
+  <img src="public/dukaworks-logo-up-with-words.png" alt="DukaWorks Logo" width="200" />
+</p>
 
-<img src="./public/dukaworks-logo-up-with-words.png" alt="DukaWorks Logo" width="200" />
+<p align="center">
+  <strong>基于 Web 的 FRPC 远程配置管理工具（通过 SSH）</strong>
+</p>
 
-### 基于 Web 的 FRPC 远程配置管理工具（通过 SSH）
+<p align="center">
+  <a href="./LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="License"></a>
+  <img src="https://img.shields.io/badge/version-0.1.5-green.svg" alt="Version">
+  <a href="https://github.com/dukaworks/frpc-gui/actions/workflows/docker-publish.yml"><img src="https://github.com/dukaworks/frpc-gui/actions/workflows/docker-publish.yml/badge.svg" alt="Docker Build & Publish"></a>
+  <br>
+  <a href="https://x.com/dukatalk"><img src="https://img.shields.io/badge/X-Follow%20@dukatalk-black.svg?logo=x" alt="Follow on X"></a>
+  <a href="https://t.me/zychen2022"><img src="https://img.shields.io/badge/Telegram-Channel-blue.svg?logo=telegram" alt="Telegram Channel"></a>
+  <a href="https://t.me/+wmMDJOMbU9FhMmNl"><img src="https://img.shields.io/badge/Telegram-Community-blue.svg?logo=telegram" alt="Telegram Community"></a>
+</p>
 
-[![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
-![Version](https://img.shields.io/badge/version-0.1.5-green.svg)
-[![Docker Build & Publish](https://github.com/dukaworks/frpc-gui/actions/workflows/docker-publish.yml/badge.svg)](https://github.com/dukaworks/frpc-gui/actions/workflows/docker-publish.yml)
-[![Follow on X](https://img.shields.io/badge/X-Follow%20@dukatalk-black.svg?logo=x)](https://x.com/dukatalk)
-[![Telegram Channel](https://img.shields.io/badge/Telegram-Channel-blue.svg?logo=telegram)](https://t.me/zychen2022)
-[![Telegram Community](https://img.shields.io/badge/Telegram-Community-blue.svg?logo=telegram)](https://t.me/+wmMDJOMbU9FhMmNl)
-
-[**English**](README.md) | [**中文**](README_zh.md)
-
-</div>
+<p align="center">
+  [ <a href="./README.md">English</a> | <strong>中文</strong> ]
+</p>
 
 ---
 
@@ -98,6 +103,6 @@ docker run -d \
 
 ---
 
-<div align="center">
+<p align="center">
   <sub>Built with ❤️ by <a href="https://github.com/dukaworks">DukaWorks</a></sub>
-</div>
+</p>
