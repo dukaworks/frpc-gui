@@ -27,20 +27,86 @@ interface ProxyListOverviewProps {
   logs?: string;
 }
 
-function getProxyStatus(proxyName: string, logs?: string): 'online' | 'error' {
+function stripAnsi(input: string): string {
+  let out = '';
+  for (let i = 0; i < input.length; i++) {
+    const code = input.charCodeAt(i);
+    if (code === 27 && input[i + 1] === '[') {
+      i += 2;
+      while (i < input.length) {
+        const c = input.charCodeAt(i);
+        if (c >= 0x40 && c <= 0x7e) break;
+        i++;
+      }
+      continue;
+    }
+    out += input[i];
+  }
+  return out;
+}
+
+function getGlobalHealthy(logs: string): boolean | 'unknown' {
+  const lines = logs.split('\n');
+  for (let i = lines.length - 1; i >= 0; i--) {
+    const line = stripAnsi(lines[i]).toLowerCase();
+    if (line.includes('login to server success')) return true;
+    if (line.includes('login to server failed')) return false;
+    if (line.includes('connect to server failed')) return false;
+    if (line.includes('not connected')) return false;
+  }
+  return 'unknown';
+}
+
+function buildMatchKeys(proxy: ProxyConfig): string[] {
+  const keys = new Set<string>();
+  const name = (proxy.name || '').trim();
+  if (name) {
+    keys.add(`[${name}]`.toLowerCase());
+    keys.add(`proxy ${name}`.toLowerCase());
+    keys.add(`proxy="${name}"`.toLowerCase());
+    keys.add(`proxy='${name}'`.toLowerCase());
+    keys.add(`proxy_name=${name}`.toLowerCase());
+    keys.add(`proxy name=${name}`.toLowerCase());
+  }
+
+  const localIP = proxy.localIP || '127.0.0.1';
+  if (proxy.localPort) keys.add(`${localIP}:${proxy.localPort}`.toLowerCase());
+
+  if ((proxy.type === 'tcp' || proxy.type === 'udp') && proxy.remotePort) {
+    keys.add(`remote_port=${proxy.remotePort}`.toLowerCase());
+    keys.add(`remote port ${proxy.remotePort}`.toLowerCase());
+    keys.add(`remoteport=${proxy.remotePort}`.toLowerCase());
+  }
+
+  if ((proxy.type === 'http' || proxy.type === 'https') && proxy.customDomains?.length) {
+    for (const d of proxy.customDomains) {
+      if (d?.trim()) keys.add(d.trim().toLowerCase());
+    }
+  }
+  if ((proxy.type === 'http' || proxy.type === 'https') && proxy.subdomain?.trim()) {
+    keys.add(`${proxy.subdomain.trim()}.`.toLowerCase());
+    keys.add(proxy.subdomain.trim().toLowerCase());
+  }
+
+  return [...keys];
+}
+
+function getProxyStatus(proxy: ProxyConfig, logs?: string): 'online' | 'error' {
   if (!logs?.trim()) return 'error';
 
-  const lines = logs.split('\n');
-  const target = `[${proxyName}]`.toLowerCase();
-  const errorPatterns = ['error', 'failed', 'timeout', 'refused', 'closed', 'disconnect'];
-  const alivePatterns = ['start proxy success', 'new proxy', 'proxy added', 'work connection', 'login to server success'];
-  let hasActivity = false;
+  const globalHealthy = getGlobalHealthy(logs);
+  if (globalHealthy === false) return 'error';
 
-  for (const rawLine of lines) {
-    const line = rawLine.toLowerCase();
-    if (!line.includes(target)) continue;
-    hasActivity = true;
-    if (errorPatterns.some((pattern) => line.includes(pattern))) {
+  const lines = logs.split('\n');
+  const matchKeys = buildMatchKeys(proxy);
+  const errorPatterns = [' error ', 'failed', 'timeout', 'refused', 'closed', 'disconnect', 'unavailable'];
+  const warnPatterns = [' warn ', 'warning'];
+  const alivePatterns = ['start proxy success', 'new proxy', 'proxy added', 'work connection'];
+
+  for (let i = lines.length - 1; i >= 0; i--) {
+    const line = stripAnsi(lines[i]).toLowerCase();
+    if (!matchKeys.some((k) => line.includes(k))) continue;
+    if (errorPatterns.some((pattern) => line.includes(pattern)) || warnPatterns.some((pattern) => line.includes(pattern))) {
       return 'error';
     }
     if (alivePatterns.some((pattern) => line.includes(pattern))) {
@@ -48,7 +114,7 @@ function getProxyStatus(proxyName: string, logs?: string): 'online' | 'error' {
     }
   }
 
-  return hasActivity ? 'online' : 'error';
+  return 'online';
 }
 
 export function ProxyListOverview({ 
@@ -129,7 +195,7 @@ export function ProxyListOverview({
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
         {paginatedProxies.map(p => {
           const isSelected = selectedProxies.has(p.name);
-          const status = getProxyStatus(p.name, logs);
+          const status = getProxyStatus(p, logs);
           
           return (
             <Card 
