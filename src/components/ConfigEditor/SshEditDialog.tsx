@@ -12,10 +12,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { Checkbox } from '@/components/ui/checkbox';
 import type { SSHConfig } from '@/shared/types';
 import { Eye, EyeOff, Lock, KeyRound } from 'lucide-react';
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 
 interface SshEditDialogProps {
   open: boolean;

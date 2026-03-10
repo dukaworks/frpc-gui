@@ -3,7 +3,7 @@ import { ApiClient } from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Loader2, Save, Code, AlertTriangle, Server, Eye, EyeOff, Lock, Unlock } from 'lucide-react';
 import { useFrpcConfig } from '@/hooks/useFrpcConfig';
@@ -99,8 +99,8 @@ export function ConfigEditor({ initialContent, path, onSave, onConfigSaved, defa
       }
 
       setTimeout(() => setSuccess(''), 2000);
-    } catch (err: any) {
-      setError(err.message || t('common.saveFailed'));
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : t('common.saveFailed'));
     } finally {
       setSaving(false);
     }
@@ -275,8 +275,8 @@ export function ConfigEditor({ initialContent, path, onSave, onConfigSaved, defa
                         <div className="relative">
                             <Input
                                 type={showToken ? "text" : "password"}
-                                value={(commonConfig as any).token || ''}
-                                onChange={(e) => updateCommon('token' as any, e.target.value)}
+                                value={commonConfig.token || ''}
+                                onChange={(e) => updateCommon('token', e.target.value)}
                                 placeholder={t('config.tokenPlaceholder')}
                                 className="pr-10"
                                 disabled={isLocked}

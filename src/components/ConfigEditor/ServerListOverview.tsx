@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Server, MoreHorizontal, Trash2, Edit2, PlayCircle, Plus, Lock, CheckCircle2, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Server, MoreHorizontal, Trash2, Edit2, PlayCircle, Plus, CheckCircle2, ChevronLeft, ChevronRight } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,

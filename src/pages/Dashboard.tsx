@@ -15,10 +15,8 @@ import { Label } from '@/components/ui/label';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { useFrpcConfig } from '@/hooks/useFrpcConfig';
 import { ProxyEditDialog } from '@/components/ConfigEditor/ProxyEditDialog';
-import { ServerListOverview } from '@/components/ConfigEditor/ServerListOverview';
-import { ServerEditDialog } from '@/components/ConfigEditor/ServerEditDialog';
 import { SshEditDialog } from '@/components/ConfigEditor/SshEditDialog';
-import { ProxyConfig, ServerProfile, SSHConfig } from '@/shared/types';
+import { ProxyConfig, SSHConfig } from '@/shared/types';
 import { useTranslation } from 'react-i18next';
 import { useSettingsStore } from '@/store/settingsStore';
 import { SettingsDialog } from '@/components/SettingsDialog';
@@ -107,7 +105,27 @@ export default function Dashboard() {
   const [logsLoading, setLogsLoading] = useState(false);
   const [statusLogs, setStatusLogs] = useState<string>('');
   
-  const cleanAnsi = (raw: string) => raw.replace(/[\u001b\u009b][[()#;?]*(?:[0-9]{1,4}(?:;[0-9]{0,4})*)?[0-9A-ORZcf-nqry=><]/g, '');
+  const cleanAnsi = (raw: string) => {
+    const esc = '\u001b';
+    const csi = '\u009b';
+    let out = '';
+
+    for (let i = 0; i < raw.length; i += 1) {
+      const ch = raw[i];
+      if (ch === esc || ch === csi) {
+        i += 1;
+        while (i < raw.length) {
+          const code = raw.charCodeAt(i);
+          if (code >= 0x40 && code <= 0x7e) break;
+          i += 1;
+        }
+        continue;
+      }
+      out += ch;
+    }
+
+    return out;
+  };
 
   const fetchLogs = async () => {
     // Ensure we are connected before fetching
@@ -123,9 +141,10 @@ export default function Dashboard() {
       const cleanStatusLogs = cleanAnsi(statusRes.logs || '');
       setLogs(cleanLogs || t('dashboard.noLogsAvailable'));
       setStatusLogs(cleanStatusLogs);
-    } catch (e: any) {
+    } catch (e: unknown) {
       console.error("Failed to fetch logs", e);
-      if (e.message === 'Not connected' || e.message?.includes('Not connected')) {
+      const message = e instanceof Error ? e.message : '';
+      if (message === 'Not connected' || message.includes('Not connected')) {
           disconnect();
           navigate('/');
       }
@@ -152,7 +171,6 @@ export default function Dashboard() {
     content: hookContent, 
     proxies, 
     commonConfig,
-    updateCommon,
     parseError, 
     addProxy: hookAddProxy, 
     updateProxy: hookUpdateProxy, 
@@ -161,33 +179,8 @@ export default function Dashboard() {
     generateToml 
   } = useFrpcConfig(configContent);
 
-  // Server List State
-  const [serverProfiles, setServerProfiles] = useState<ServerProfile[]>(() => {
-    try {
-      const saved = localStorage.getItem('frpc_server_profiles');
-      return saved ? JSON.parse(saved) : [];
-    } catch {
-      return [];
-    }
-  });
-  const [serverEditDialogOpen, setServerEditDialogOpen] = useState(false);
-  const [editingServerProfile, setEditingServerProfile] = useState<ServerProfile | null>(null);
   const [sshEditDialogOpen, setSshEditDialogOpen] = useState(false);
   const [editingSshProfile, setEditingSshProfile] = useState<SSHConfig | null>(null);
-
-  useEffect(() => {
-    localStorage.setItem('frpc_server_profiles', JSON.stringify(serverProfiles));
-  }, [serverProfiles]);
-
-  const handleAddServer = () => {
-    setEditingServerProfile(null);
-    setServerEditDialogOpen(true);
-  };
-
-  const handleEditServer = (profile: ServerProfile) => {
-    setEditingServerProfile(profile);
-    setServerEditDialogOpen(true);
-  };
 
   const handleAddSshConnection = () => {
     setEditingSshProfile(null);
@@ -215,18 +208,6 @@ export default function Dashboard() {
     setSshEditDialogOpen(false);
   };
 
-  const handleSaveServer = (profile: ServerProfile) => {
-    setServerProfiles(prev => {
-      const exists = prev.some(p => p.id === profile.id);
-      if (exists) {
-        return prev.map(p => p.id === profile.id ? profile : p);
-      }
-      return [...prev, profile];
-    });
-    setServerEditDialogOpen(false);
-    // Note: Saving a profile doesn't change active config, applying it does.
-  };
-
   const [serverToDelete, setServerToDelete] = useState<string | null>(null);
   const [serverDeleteDialogOpen, setServerDeleteDialogOpen] = useState(false);
 
@@ -240,25 +221,11 @@ export default function Dashboard() {
       const id = serverToDelete;
       
       if (id.startsWith('ssh_')) {
-          const sshId = id.replace('ssh_', '');
-          removeConnection(sshId);
-      } else {
-          setServerProfiles(prev => prev.filter(p => p.id !== id));
+        const sshId = id.replace('ssh_', '');
+        removeConnection(sshId);
       }
       setServerDeleteDialogOpen(false);
       setServerToDelete(null);
-  };
-
-  const handleApplyServer = (profile: ServerProfile) => {
-      if (confirm(`Apply server profile "${profile.name}"? This will update the [common] configuration.`)) {
-          updateCommon({
-              serverAddr: profile.serverAddr,
-              serverPort: profile.serverPort,
-              token: profile.token
-          });
-          triggerSave();
-          setRestartRequired(true);
-      }
   };
 
   // CRUD States
@@ -286,9 +253,10 @@ export default function Dashboard() {
     try {
       const res = await ApiClient.getConfig(targetPath);
       setConfigContent(res.content);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error(error);
-      if (error.message === 'Not connected' || error.message?.includes('Not connected')) {
+      const message = error instanceof Error ? error.message : '';
+      if (message === 'Not connected' || message.includes('Not connected')) {
           disconnect();
           navigate('/');
       }
@@ -317,9 +285,9 @@ export default function Dashboard() {
         // Keep config content if manual mode, otherwise clear
         if (!manualMode) setConfigContent('');
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error(error);
-      alert(error.message || 'Scan failed');
+      alert(error instanceof Error ? error.message : 'Scan failed');
     } finally {
       setScanLoading(false);
     }
@@ -339,9 +307,9 @@ export default function Dashboard() {
         setRestartRequired(false);
       }
       setTimeout(handleRescan, 2000);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error(error);
-      showFeedback('error', `Failed to control service: ${error.message}`);
+      showFeedback('error', `Failed to control service: ${error instanceof Error ? error.message : 'Unknown error'}`);
     } finally {
       setServiceLoading(false);
     }
@@ -353,8 +321,8 @@ export default function Dashboard() {
     try {
         await loadConfig(manualConfigPath);
         setManualMode(true);
-    } catch (e: any) {
-        alert(e.message);
+    } catch (e: unknown) {
+        alert(e instanceof Error ? e.message : 'Load failed');
     } finally {
         setManualLoading(false);
     }
@@ -371,8 +339,8 @@ export default function Dashboard() {
     try {
       await ApiClient.saveConfig(path, newContent);
       setConfigContent(newContent); // Update local state to reflect saved content (and re-init hook)
-    } catch (e: any) {
-      alert(`Save failed: ${e.message}`);
+    } catch (e: unknown) {
+      alert(`Save failed: ${e instanceof Error ? e.message : 'Unknown error'}`);
     }
   };
 
@@ -403,9 +371,13 @@ export default function Dashboard() {
 
       // Try File System Access API (Show Save File Picker)
       // This allows the user to choose where to save the file
-      if ('showSaveFilePicker' in window) {
+      type FileHandleLike = { createWritable(): Promise<{ write(data: string): Promise<void>; close(): Promise<void> }> };
+      type ShowSaveFilePickerLike = (options: unknown) => Promise<FileHandleLike>;
+      const showSaveFilePicker = (window as unknown as { showSaveFilePicker?: ShowSaveFilePickerLike }).showSaveFilePicker;
+
+      if (showSaveFilePicker) {
         try {
-          const handle = await (window as any).showSaveFilePicker({
+          const handle = await showSaveFilePicker({
             suggestedName: filename,
             types: [{
               description: 'JSON Files',
@@ -417,9 +389,9 @@ export default function Dashboard() {
           await writable.close();
           showFeedback('success', t('dashboard.exportSuccess'));
           return;
-        } catch (err: any) {
+        } catch (err: unknown) {
           // If user cancelled, just return
-          if (err.name === 'AbortError') return;
+          if (err && typeof err === 'object' && 'name' in err && err.name === 'AbortError') return;
           // If other error, fall back to legacy download
           console.warn('File picker failed, falling back to download', err);
         }
@@ -436,7 +408,7 @@ export default function Dashboard() {
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
       showFeedback('success', t('dashboard.exportSuccess'));
-    } catch (e) {
+    } catch {
       showFeedback('error', t('dashboard.exportError'));
     }
   };
@@ -457,7 +429,7 @@ export default function Dashboard() {
         } else {
             showFeedback('error', t('dashboard.importError'));
         }
-      } catch (err) {
+      } catch {
         showFeedback('error', t('dashboard.importError'));
       }
       // Reset input
@@ -981,13 +953,6 @@ export default function Dashboard() {
         initialData={editingProxy}
         onSave={handleSaveProxy}
         existingNames={existingNames}
-      />
-
-      <ServerEditDialog 
-        open={serverEditDialogOpen} 
-        onOpenChange={setServerEditDialogOpen}
-        initialData={editingServerProfile}
-        onSave={handleSaveServer}
       />
       
       <SshEditDialog

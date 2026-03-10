@@ -30,7 +30,7 @@ export interface ConnectResponse {
 
 export interface ConfigResponse {
   content: string;
-  parsed?: any;
+  parsed?: unknown;
   format: 'toml' | 'text';
 }
 
@@ -43,14 +43,14 @@ export interface ProxyConfig {
   remotePort?: number;
   customDomains?: string[];
   subdomain?: string;
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 export interface CommonConfig {
   serverAddr: string;
   serverPort: number;
   token?: string;
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 export interface ServerProfile extends CommonConfig {

@@ -10,27 +10,35 @@ function toNumberOrUndefined(v: unknown) {
   return Number.isFinite(n) ? n : undefined;
 }
 
-function normalizeCommon(common: any): CommonConfig {
-  const serverAddr = common?.serverAddr ?? common?.server_addr ?? '';
-  const serverPort = common?.serverPort ?? common?.server_port ?? 7000;
-  const token = common?.auth?.token ?? common?.token ?? common?.auth_token ?? '';
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null;
+}
+
+function normalizeCommon(common: unknown): CommonConfig {
+  const obj = isRecord(common) ? common : {};
+
+  const serverAddr = obj.serverAddr ?? obj.server_addr ?? '';
+  const serverPort = obj.serverPort ?? obj.server_port ?? 7000;
+  const auth = isRecord(obj.auth) ? obj.auth : undefined;
+  const token = (auth?.token ?? obj.token ?? obj.auth_token) ?? '';
 
   return {
     serverAddr: String(serverAddr ?? ''),
     serverPort: toNumberOrUndefined(serverPort) ?? 7000,
     token: token ? String(token) : undefined,
-    ...(common || {}),
+    ...obj,
   };
 }
 
-function normalizeProxy(raw: any): ProxyConfig {
-  const name = raw?.name ?? raw?.proxyName ?? raw?.proxy_name ?? '';
-  const type = (raw?.type ?? 'tcp') as ProxyType;
+function normalizeProxy(raw: unknown): ProxyConfig {
+  const obj = isRecord(raw) ? raw : {};
+  const name = obj.name ?? obj.proxyName ?? obj.proxy_name ?? '';
+  const type = (obj.type ?? 'tcp') as ProxyType;
 
-  const localIP = raw?.localIP ?? raw?.local_ip ?? raw?.localAddr ?? raw?.local_addr ?? '127.0.0.1';
-  const localPort = raw?.localPort ?? raw?.local_port;
-  const remotePort = raw?.remotePort ?? raw?.remote_port;
-  const customDomains = raw?.customDomains ?? raw?.custom_domains;
+  const localIP = obj.localIP ?? obj.local_ip ?? obj.localAddr ?? obj.local_addr ?? '127.0.0.1';
+  const localPort = obj.localPort ?? obj.local_port;
+  const remotePort = obj.remotePort ?? obj.remote_port;
+  const customDomains = obj.customDomains ?? obj.custom_domains;
 
   return {
     name: String(name ?? ''),
@@ -39,12 +47,12 @@ function normalizeProxy(raw: any): ProxyConfig {
     localPort: toNumberOrUndefined(localPort),
     remotePort: toNumberOrUndefined(remotePort),
     customDomains: Array.isArray(customDomains)
-      ? customDomains.map((d: any) => String(d))
+      ? customDomains.map((d) => String(d))
       : typeof customDomains === 'string'
         ? customDomains.split(',').map((s) => s.trim()).filter(Boolean)
         : undefined,
-    subdomain: raw?.subdomain ? String(raw.subdomain) : undefined,
-    ...raw,
+    subdomain: obj.subdomain ? String(obj.subdomain) : undefined,
+    ...obj,
   };
 }
 
@@ -68,18 +76,17 @@ function createNewProxy(existingNames: Set<string>): ProxyConfig {
 export function useFrpcConfig(initialContent: string) {
   const { t } = useTranslation();
   const [content, setContent] = useState(initialContent);
-  const [configObj, setConfigObj] = useState<any | null>(null);
+  const [configObj, setConfigObj] = useState<Record<string, unknown> | null>(null);
   const [commonConfig, setCommonConfig] = useState<CommonConfig>({ serverAddr: '', serverPort: 7000 });
   const [proxies, setProxies] = useState<ProxyConfig[]>([]);
-  const [legacyProxyNames, setLegacyProxyNames] = useState<string[]>([]);
+  const [, setLegacyProxyNames] = useState<string[]>([]);
   const [parseError, setParseError] = useState('');
 
   // Preprocess TOML content to fix common issues (e.g. spaces in section names without quotes)
   const preprocessToml = (text: string) => {
     if (!text) return '';
     const lines = text.split('\n');
-    const processedLines = lines.map(line => {
-      let processed = line;
+    const processedLines = lines.map((line) => {
       const trimmed = line.trim();
       
       // Check for section headers: starts with [ and ends with ]
@@ -90,15 +97,15 @@ export function useFrpcConfig(initialContent: string) {
       const isSectionHeader = trimmed.startsWith('[') && trimmed.endsWith(']') && !trimmed.startsWith('[[') && !line.includes('=');
       
       if (isSectionHeader) {
-        let content = trimmed.slice(1, -1).trim();
+        const content = trimmed.slice(1, -1).trim();
         
         // Handle quoted content inside brackets e.g. ["foo"]
         if ((content.startsWith('"') && content.endsWith('"')) || (content.startsWith("'") && content.endsWith("'"))) {
-             return processed;
+             return line;
         }
 
         // Skip common section
-        if (content === 'common') return processed;
+        if (content === 'common') return line;
 
         // Check for special characters that need quoting in TOML keys
         // TOML bare keys only support A-Za-z0-9_-
@@ -108,13 +115,13 @@ export function useFrpcConfig(initialContent: string) {
         if (needsQuote) {
              return `["${content}"]`;
         }
-        return processed;
+        return line;
       }
 
       // 2. Fix Unquoted String Values (IPs, Tokens)
       // Match basic key = value pattern, allowing for dots in keys or quoted keys
       // e.g. local_ip = 192.168.1.1 or "local_ip" = 192.168.1.1
-      const kvMatch = processed.match(/^(\s*(?:[a-zA-Z0-9_-]+|"[^"]+"|'[^']+')\s*=\s*)(.+)$/);
+      const kvMatch = line.match(/^(\s*(?:[a-zA-Z0-9_-]+|"[^"]+"|'[^']+')\s*=\s*)(.+)$/);
       
       if (kvMatch) {
           const prefix = kvMatch[1];
@@ -128,7 +135,7 @@ export function useFrpcConfig(initialContent: string) {
               valuePart = valuePart.slice(0, commentIdx);
           }
           
-          let value = valuePart.trim();
+          const value = valuePart.trim();
           
           // Skip if empty or already quoted or array/table
           if (!value || 
@@ -138,19 +145,19 @@ export function useFrpcConfig(initialContent: string) {
               value.startsWith('{') ||
               value === 'true' || 
               value === 'false') {
-              return processed;
+              return line;
           }
           
           // Check if number (integer or float)
           const isNumber = /^-?\d+(\.\d+)?$/.test(value);
-          if (isNumber) return processed;
+          if (isNumber) return line;
           
           // If we are here, it's likely an unquoted string (like IP or token)
           // Quote it
           return `${prefix}"${value}" ${comment}`;
       }
 
-      return processed;
+      return line;
     });
     return processedLines.join('\n');
   };
@@ -167,23 +174,25 @@ export function useFrpcConfig(initialContent: string) {
       }
       
       const safeText = preprocessToml(text);
-      const parsed: any = toml.parse(safeText);
+      const parsedUnknown: unknown = toml.parse(safeText);
+      const parsed = isRecord(parsedUnknown) ? parsedUnknown : {};
       setConfigObj(parsed);
 
-      const commonRaw = parsed?.common ?? {};
+      const commonRaw = parsed.common ?? {};
       setCommonConfig(normalizeCommon(commonRaw));
 
       const legacyNames: string[] = [];
       let proxyList: ProxyConfig[] = [];
 
-      if (Array.isArray(parsed?.proxies)) {
-        proxyList = parsed.proxies.map((p: any) => normalizeProxy(p));
+      if (Array.isArray(parsed.proxies)) {
+        proxyList = parsed.proxies.map((p) => normalizeProxy(p));
       } else {
         const rootKeys = Object.keys(parsed || {});
+        type NamedSection = { name: string; value: Record<string, unknown> };
         const candidates = rootKeys
           .filter((k) => k !== 'common' && k !== 'proxies')
-          .map((k) => ({ name: k, value: (parsed as any)[k] }))
-          .filter((kv) => kv.value && typeof kv.value === 'object');
+          .map((k) => ({ name: k, value: parsed[k] }))
+          .filter((kv): kv is NamedSection => isRecord(kv.value));
 
         const proxyLike = candidates.filter((kv) => {
           const v = kv.value;
@@ -198,11 +207,11 @@ export function useFrpcConfig(initialContent: string) {
 
       setLegacyProxyNames(legacyNames);
       setProxies(proxyList);
-    } catch (e: any) {
+    } catch (e: unknown) {
       setConfigObj(null);
       setLegacyProxyNames([]);
       setProxies([]);
-      setParseError(e?.message ? String(e.message) : t('config.parseFailed'));
+      setParseError(e instanceof Error && e.message ? e.message : t('config.parseFailed'));
     }
   };
 
@@ -213,7 +222,7 @@ export function useFrpcConfig(initialContent: string) {
 
   const proxyNameSet = useMemo(() => new Set(proxies.map((p) => p.name)), [proxies]);
 
-  const updateCommon = (field: keyof CommonConfig | Partial<CommonConfig>, value?: any) => {
+  const updateCommon = (field: keyof CommonConfig | Partial<CommonConfig>, value?: unknown) => {
     if (typeof field === 'object') {
       setCommonConfig((prev) => ({ ...prev, ...field }));
     } else {
@@ -290,17 +299,18 @@ export function useFrpcConfig(initialContent: string) {
     // instead of the nested [[proxies]] array that @iarna/toml might produce if we aren't careful.
     // The original file uses [common] and then [proxy_name] sections.
     
-    const output: any = {};
+    const output: Record<string, unknown> = {};
 
     // 1. Build [common] section
-    const commonSection: any = {};
+    const commonSection: Record<string, unknown> = {};
     if (commonConfig.serverAddr) commonSection.server_addr = commonConfig.serverAddr;
     if (commonConfig.serverPort) commonSection.server_port = Number(commonConfig.serverPort);
-    if ((commonConfig as any).token) commonSection.token = String((commonConfig as any).token);
+    if (commonConfig.token) commonSection.token = String(commonConfig.token);
     
     // Add other common fields that were preserved, converting camelCase to snake_case if needed
     // or just keeping them if they were extra fields
-    const configCommon = configObj?.common || {};
+    const configCommonRaw = configObj?.common;
+    const configCommon = isRecord(configCommonRaw) ? configCommonRaw : {};
     Object.keys(configCommon).forEach(k => {
         if (k !== 'serverAddr' && k !== 'server_addr' && 
             k !== 'serverPort' && k !== 'server_port' && 
@@ -314,7 +324,7 @@ export function useFrpcConfig(initialContent: string) {
     // 2. Build Proxy sections as flat keys
     // e.g. output['ssh'] = { type: 'tcp', ... }
     proxies.forEach(p => {
-        const proxySection: any = {};
+        const proxySection: Record<string, unknown> = {};
         
         if (p.type) proxySection.type = p.type;
         if (p.localIP) proxySection.local_ip = p.localIP;
@@ -327,14 +337,15 @@ export function useFrpcConfig(initialContent: string) {
         if (p.subdomain) proxySection.subdomain = p.subdomain;
         
         // Add extra fields
-        Object.keys(p).forEach(k => {
+        Object.keys(p as Record<string, unknown>).forEach(k => {
             if (['name', 'type', 'localIP', 'local_ip', 'localAddr', 'local_addr', 
                  'localPort', 'local_port', 'remotePort', 'remote_port', 
                  'customDomains', 'custom_domains', 'subdomain'].includes(k)) {
                 return;
             }
-            if (p[k] !== undefined && p[k] !== '') {
-                proxySection[k] = p[k];
+            const value = (p as Record<string, unknown>)[k];
+            if (value !== undefined && value !== '') {
+                proxySection[k] = value;
             }
         });
 
@@ -359,7 +370,7 @@ export function useFrpcConfig(initialContent: string) {
       // If we want to avoid underscores, we might need to post-process the string
       // or ensure values are simple numbers.
       
-      const tomlStr = toml.stringify(obj as any);
+      const tomlStr = toml.stringify(obj as unknown as toml.JsonMap);
       
       // Post-process to remove underscores from numbers if they appear like 8_000
       // Match digit_digit pattern

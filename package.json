@@ -4,7 +4,10 @@
   "version": "0.1.10",
   "description": "Web-based GUI for managing Frpc configurations remotely via SSH",
   "license": "MIT",
-  "author": "DukaWorks",
+  "author": {
+    "name": "DukaWorks",
+    "email": "dukaworks@users.noreply.github.com"
+  },
   "repository": {
     "type": "git",
     "url": "https://github.com/dukaworks/frpc-gui.git"
@@ -50,6 +53,7 @@
       "target": [
         "deb"
       ],
+      "maintainer": "DukaWorks <dukaworks@users.noreply.github.com>",
       "icon": "dist/favicon.png"
     }
   },

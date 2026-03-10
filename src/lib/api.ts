@@ -1,6 +1,23 @@
-import { ConnectResponse, ConfigResponse } from '../shared/types';
+import type { ConnectResponse, ConfigResponse, FrpcProcessInfo } from '../shared/types';
 
 const API_BASE = '/api/frpc';
+
+type ScanResponse = { process: FrpcProcessInfo | null };
+type LogsResponse = { logs: string };
+type SaveConfigResponse = { success: boolean };
+type ServiceControlResponse = { output: string; success: boolean };
+
+type ConnectCredentials = {
+  host: string;
+  port: number;
+  username: string;
+  password?: string;
+  privateKey?: string;
+};
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null;
+}
 
 export class ApiClient {
   private static sessionId: string | null = null;
@@ -21,12 +38,10 @@ export class ApiClient {
     return this.sessionId;
   }
 
-  private static async request(endpoint: string, options: RequestInit = {}) {
-    const headers = {
-      'Content-Type': 'application/json',
-      ...((options.headers as any) || {}),
-      'x-session-id': this.getSessionId() || '',
-    };
+  private static async request<T = unknown>(endpoint: string, options: RequestInit = {}): Promise<T> {
+    const headers = new Headers(options.headers);
+    headers.set('Content-Type', 'application/json');
+    headers.set('x-session-id', this.getSessionId() || '');
 
     const res = await fetch(`${API_BASE}${endpoint}`, {
       ...options,
@@ -34,41 +49,30 @@ export class ApiClient {
     });
 
     const text = await res.text();
-    let data;
+    let data: unknown = {};
     try {
-      data = text ? JSON.parse(text) : {};
-    } catch (e) {
+      data = text ? (JSON.parse(text) as unknown) : {};
+    } catch {
       console.error('Failed to parse response:', text);
       throw new Error('Invalid server response');
     }
 
     if (!res.ok) {
-      throw new Error(data.error || `Request failed: ${res.status} ${res.statusText}`);
+      const message =
+        isRecord(data) && typeof data.error === 'string'
+          ? data.error
+          : `Request failed: ${res.status} ${res.statusText}`;
+      throw new Error(message);
     }
-    return data;
+    return data as T;
   }
 
-  static async connect(credentials: any): Promise<ConnectResponse> {
-    const res = await fetch(`${API_BASE}/connect`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(credentials),
+  static async connect(credentials: ConnectCredentials): Promise<ConnectResponse> {
+    const data = await this.request<ConnectResponse>('/connect', {
+      method: 'POST',
+      body: JSON.stringify(credentials),
     });
-    
-    const text = await res.text();
-    let data;
-    try {
-      data = text ? JSON.parse(text) : {};
-    } catch (e) {
-      console.error('Failed to parse connect response:', text);
-      throw new Error('Invalid server response');
-    }
-
-    if (!res.ok) throw new Error(data.error || `Connection failed: ${res.status}`);
-
-    if (data.sessionId) {
-      this.setSessionId(data.sessionId);
-    }
+    this.setSessionId(data.sessionId);
     return data;
   }
 
@@ -77,14 +81,14 @@ export class ApiClient {
   }
 
   static async saveConfig(path: string, content: string) {
-    return this.request('/config', {
+    return this.request<SaveConfigResponse>('/config', {
       method: 'POST',
       body: JSON.stringify({ path, content }),
     });
   }
 
   static async serviceControl(action: string, type: string, serviceName: string, requiresSudo?: boolean) {
-    return this.request('/service', {
+    return this.request<ServiceControlResponse>('/service', {
       method: 'POST',
       body: JSON.stringify({ action, type, serviceName, requiresSudo }),
     });
@@ -100,10 +104,10 @@ export class ApiClient {
     if (options?.sinceHours) {
       query.set('sinceHours', String(options.sinceHours));
     }
-    return this.request(`/logs?${query.toString()}`);
+    return this.request<LogsResponse>(`/logs?${query.toString()}`);
   }
 
-  static async scan() {
-      return this.request('/scan', { method: 'POST' });
+  static async scan(): Promise<ScanResponse> {
+    return this.request<ScanResponse>('/scan', { method: 'POST' });
   }
 }

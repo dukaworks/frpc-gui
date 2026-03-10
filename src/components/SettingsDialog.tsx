@@ -112,10 +112,6 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
     }
   };
 
-  const handleAutoFill = async () => {
-    // Deprecated in favor of automatic fill, but kept for logic reference or if we want a manual "Reset" button later
-  };
-
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[500px]">

@@ -1,4 +1,4 @@
-import { Client, ClientChannel } from 'ssh2';
+import { Client, type ConnectConfig } from 'ssh2';
 import { readFileSync } from 'fs';
 
 export interface SSHConfig {
@@ -49,7 +49,7 @@ class SshService {
       });
 
       try {
-        const connectConfig: any = {
+        const connectConfig: ConnectConfig = {
           host: config.host,
           port: config.port,
           username: config.username,
@@ -64,7 +64,7 @@ class SshService {
                 // Assume it's a path
                 try {
                     connectConfig.privateKey = readFileSync(config.privateKey);
-                } catch (e) {
+                } catch {
                     // If read fails, maybe it was a string key that didn't have BEGIN? 
                     // Or file doesn't exist. Warn and try as string?
                     console.warn('Failed to read privateKey file, trying as string');
@@ -96,17 +96,19 @@ class SshService {
         let stdout = '';
         let stderr = '';
 
-        stream.on('close', (code: number, signal: any) => {
+        stream.on('close', (code: number | null, signal: string | null) => {
+          void signal;
           if (code !== 0) {
             // console.warn(`Command "${command}" failed with code ${code}: ${stderr}`);
              // Don't reject immediately for grep/find commands that might return 1
+             void stderr;
              resolve(stdout); 
           } else {
             resolve(stdout);
           }
-        }).on('data', (data: any) => {
+        }).on('data', (data: Buffer) => {
           stdout += data.toString();
-        }).stderr.on('data', (data: any) => {
+        }).stderr.on('data', (data: Buffer) => {
           stderr += data.toString();
         });
       });
@@ -177,8 +179,8 @@ class SshService {
             if (verOutput && !verOutput.toLowerCase().includes('exec failed')) {
                 version = verOutput.trim();
             }
-        } catch (e) {
-            // ignore if exec fails
+        } catch {
+            void 0;
         }
 
         // Inspect to find config mount and start time
@@ -238,8 +240,7 @@ class SshService {
             version: version || undefined
         };
 
-    } catch (e) {
-        // console.error('Docker scan failed', e);
+    } catch {
         return null;
     }
   }
@@ -271,7 +272,9 @@ class SshService {
                 version = await this.exec(`${binPath} -v`);
                 version = version.trim();
             }
-        } catch (e) {}
+        } catch {
+            void 0;
+        }
 
         // Get ExecStart to find config path
         const execStart = await this.exec(`systemctl show ${serviceName} --property=ExecStart --value`);
@@ -302,7 +305,9 @@ class SshService {
                     const checkIni = await this.exec('ls /etc/frp/frpc.ini');
                     if (checkIni && !checkIni.includes('No such file')) configPath = '/etc/frp/frpc.ini';
                 }
-            } catch (e) {}
+            } catch {
+                void 0;
+            }
         }
 
         return {
@@ -318,7 +323,7 @@ class SshService {
             version: version || undefined
         };
 
-      } catch (e) {
+      } catch {
           return null;
       }
   }
@@ -341,7 +346,9 @@ class SshService {
                 const ts = new Date(lstart.trim()).getTime();
                 if (!isNaN(ts)) startTimestamp = ts;
             }
-        } catch (e) {}
+        } catch {
+            void 0;
+        }
 
         let configPath = '';
         const cIndex = parts.indexOf('-c');
@@ -359,11 +366,13 @@ class SshService {
             try {
                 await this.exec('ls /etc/frp/frpc.ini');
                 configPath = '/etc/frp/frpc.ini';
-            } catch (e) {
+            } catch {
                 try {
                     await this.exec('ls /etc/frp/frpc.toml');
                     configPath = '/etc/frp/frpc.toml';
-                } catch (e2) {}
+                } catch {
+                    void 0;
+                }
             }
         }
 
@@ -375,7 +384,7 @@ class SshService {
             configPath,
             startTimestamp
         };
-      } catch (e) {
+      } catch {
           return null;
       }
   }
@@ -388,7 +397,7 @@ class SshService {
     try {
         const b64 = Buffer.from(content).toString('base64');
         await this.exec(`echo "${b64}" | base64 -d > "${path}"`);
-    } catch (e) {
+    } catch {
         throw new Error('Failed to write file via SSH');
     }
   }

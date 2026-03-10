@@ -38,7 +38,8 @@ app.use('/api/frpc', configRoutes)
  */
 app.use(
   '/api/health',
-  (req: Request, res: Response, next: NextFunction): void => {
+  (req: Request, res: Response): void => {
+    void req
     res.status(200).json({
       success: true,
       message: 'ok',
@@ -50,6 +51,9 @@ app.use(
  * error handler middleware
  */
 app.use((error: Error, req: Request, res: Response, next: NextFunction) => {
+  void error
+  void req
+  void next
   res.status(500).json({
     success: false,
     error: 'Server internal error',

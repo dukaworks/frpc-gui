@@ -108,7 +108,7 @@ export default function Connect() {
     setLoading(true);
     setError('');
     ApiClient.scan()
-      .then((res: any) => {
+      .then((res) => {
         setConnected(existing, res.process ?? null);
         navigate('/dashboard');
       })
@@ -120,13 +120,22 @@ export default function Connect() {
       });
   }, [isConnected, navigate, setConnected, storeSessionId]);
 
-  const connect = async (config: any) => {
+  type ConnectPayload = {
+    name?: string;
+    host: string;
+    port: string | number;
+    username: string;
+    password?: string;
+    privateKey?: string;
+  };
+
+  const connect = async (config: ConnectPayload) => {
       setLoading(true);
       setError('');
       try {
         const res = await ApiClient.connect({
           host: config.host,
-          port: typeof config.port === 'string' ? parseInt(config.port) : config.port,
+          port: typeof config.port === 'string' ? parseInt(config.port, 10) : config.port,
           username: config.username,
           password: config.password,
           privateKey: config.privateKey
@@ -134,8 +143,8 @@ export default function Connect() {
         
         setConnected(res.sessionId, res.process);
         navigate('/dashboard');
-      } catch (err: any) {
-        setError(err.message || 'Failed to connect');
+      } catch (err: unknown) {
+        setError(err instanceof Error ? err.message : 'Failed to connect');
       } finally {
         setLoading(false);
       }
