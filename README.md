@@ -1,6 +1,8 @@
 # FRPC GUI
 
-![DukaWorks Logo](project_docs/images/dukaworks-logo-up-with-words.png)
+<p align="center">
+  <img src="project_docs/images/dukaworks-logo-left-with-words.png" alt="DukaWorks Logo" width="150" />
+</p>
 
 **Web-based GUI for managing FRPC configurations remotely via SSH**
 

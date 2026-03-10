@@ -1,6 +1,8 @@
 # FRPC GUI
 
-![DukaWorks Logo](project_docs/images/dukaworks-logo-up-with-words.png)
+<p align="center">
+  <img src="project_docs/images/dukaworks-logo-left-with-words.png" alt="DukaWorks Logo" width="150" />
+</p>
 
 **基于 Web 的 FRPC 远程配置管理工具（通过 SSH）**
 
