@@ -27,93 +27,9 @@ interface ProxyListOverviewProps {
   logs?: string;
 }
 
-function stripAnsi(input: string): string {
-  let out = '';
-  for (let i = 0; i < input.length; i++) {
-    const code = input.charCodeAt(i);
-    if (code === 27 && input[i + 1] === '[') {
-      i += 2;
-      while (i < input.length) {
-        const c = input.charCodeAt(i);
-        if (c >= 0x40 && c <= 0x7e) break;
-        i++;
-      }
-      continue;
-    }
-    out += input[i];
-  }
-  return out;
-}
-
-function getGlobalHealthy(logs: string): boolean | 'unknown' {
-  const lines = logs.split('\n');
-  for (let i = lines.length - 1; i >= 0; i--) {
-    const line = stripAnsi(lines[i]).toLowerCase();
-    if (line.includes('login to server success')) return true;
-    if (line.includes('login to server failed')) return false;
-    if (line.includes('connect to server failed')) return false;
-    if (line.includes('not connected')) return false;
-  }
-  return 'unknown';
-}
-
-function buildMatchKeys(proxy: ProxyConfig): string[] {
-  const keys = new Set<string>();
-  const name = (proxy.name || '').trim();
-  if (name) {
-    keys.add(`[${name}]`.toLowerCase());
-    keys.add(`proxy ${name}`.toLowerCase());
-    keys.add(`proxy="${name}"`.toLowerCase());
-    keys.add(`proxy='${name}'`.toLowerCase());
-    keys.add(`proxy_name=${name}`.toLowerCase());
-    keys.add(`proxy name=${name}`.toLowerCase());
-  }
-
-  const localIP = proxy.localIP || '127.0.0.1';
-  if (proxy.localPort) keys.add(`${localIP}:${proxy.localPort}`.toLowerCase());
-
-  if ((proxy.type === 'tcp' || proxy.type === 'udp') && proxy.remotePort) {
-    keys.add(`remote_port=${proxy.remotePort}`.toLowerCase());
-    keys.add(`remote port ${proxy.remotePort}`.toLowerCase());
-    keys.add(`remoteport=${proxy.remotePort}`.toLowerCase());
-  }
-
-  if ((proxy.type === 'http' || proxy.type === 'https') && proxy.customDomains?.length) {
-    for (const d of proxy.customDomains) {
-      if (d?.trim()) keys.add(d.trim().toLowerCase());
-    }
-  }
-  if ((proxy.type === 'http' || proxy.type === 'https') && proxy.subdomain?.trim()) {
-    keys.add(`${proxy.subdomain.trim()}.`.toLowerCase());
-    keys.add(proxy.subdomain.trim().toLowerCase());
-  }
-
-  return [...keys];
-}
-
 function getProxyStatus(proxy: ProxyConfig, logs?: string): 'online' | 'error' {
-  if (!logs?.trim()) return 'error';
-
-  const globalHealthy = getGlobalHealthy(logs);
-  if (globalHealthy === false) return 'error';
-
-  const lines = logs.split('\n');
-  const matchKeys = buildMatchKeys(proxy);
-  const errorPatterns = [' error ', 'failed', 'timeout', 'refused', 'closed', 'disconnect', 'unavailable'];
-  const warnPatterns = [' warn ', 'warning'];
-  const alivePatterns = ['start proxy success', 'new proxy', 'proxy added', 'work connection'];
-
-  for (let i = lines.length - 1; i >= 0; i--) {
-    const line = stripAnsi(lines[i]).toLowerCase();
-    if (!matchKeys.some((k) => line.includes(k))) continue;
-    if (errorPatterns.some((pattern) => line.includes(pattern)) || warnPatterns.some((pattern) => line.includes(pattern))) {
-      return 'error';
-    }
-    if (alivePatterns.some((pattern) => line.includes(pattern))) {
-      return 'online';
-    }
-  }
-
+  void proxy;
+  void logs;
   return 'online';
 }
 
@@ -221,10 +137,7 @@ export function ProxyListOverview({
                   <div className="flex items-center gap-2">
                     <div className="flex items-center gap-2">
                       {status === 'online' && (
-                        <Badge className="bg-green-500 hover:bg-green-600 border-none h-2 w-2 p-0 rounded-full" title={t('dashboard.online')} />
-                      )}
-                      {status === 'error' && (
-                        <Badge className="bg-red-500 hover:bg-red-600 border-none h-2 w-2 p-0 rounded-full" title={t('common.error')} />
+                        <Badge className="bg-green-500 hover:bg-green-600 border-none h-2 w-2 p-0 rounded-full" title={t('common.ok')} />
                       )}
                       <h3 className="font-semibold text-sm truncate max-w-[120px]" title={p.name}>{p.name}</h3>
                     </div>

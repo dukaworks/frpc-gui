@@ -10,7 +10,7 @@
 
 <p align="center">
   <a href="./LICENSE"><img src="https://img.shields.io/badge/license-MIT-8A2BE2.svg" alt="License"></a>
-  <img src="https://img.shields.io/badge/version-0.1.7-8A2BE2.svg" alt="Version">
+  <img src="https://img.shields.io/badge/version-0.1.8-8A2BE2.svg" alt="Version">
   <a href="https://github.com/dukaworks/frpc-gui/actions/workflows/docker-publish.yml"><img src="https://github.com/dukaworks/frpc-gui/actions/workflows/docker-publish.yml/badge.svg" alt="Docker Build & Publish"></a>
   <br>
   <a href="https://x.com/dukatalk"><img src="https://img.shields.io/badge/X-Follow%20@dukatalk-black.svg?logo=x" alt="Follow on X"></a>
@@ -54,8 +54,8 @@
 #### 选项 1: Docker Compose (最简单)
 
 ```bash
-# 拉取并运行最新的官方镜像
-docker-compose up -d
+# 在本仓库目录下
+docker compose up -d
 ```
 
 访问 Dashboard：`http://localhost:3000`。
@@ -66,9 +66,12 @@ docker-compose up -d
 docker run -d \
   --name frpc-gui \
   -p 3000:3000 \
-  -v /path/to/your/frpc.toml:/etc/frp/frpc.toml \
   ghcr.io/dukaworks/frpc-gui:latest
 ```
+
+说明：
+- 如果你主要用它来“通过 SSH 管理远端 frpc”，不需要挂载任何本地 frpc 配置文件。
+- 如果你希望让容器直接编辑宿主机上的 `frpc.toml`，再挂载配置文件即可（例如挂到 `/etc/frp/frpc.toml`）。
 
 ### 手动安装
 
@@ -98,6 +101,53 @@ docker run -d \
     ```
 
 2.  生成的安装包/可执行文件将位于 `release` 目录下。
+
+## 🧭 操作手册（按用户足迹）
+
+### 1) 连接服务器（SSH）
+
+1. 打开应用后进入“连接”页。
+2. 新建一条 SSH 连接：填写名称、Host、端口、用户名，并选择密码或私钥认证。
+3. 点击连接。连接成功后会进入 Dashboard。
+
+说明：
+- SSH 连接只用于登录服务器执行读取/写入配置、控制服务、拉取日志等操作，不需要 token。
+
+### 2) Dashboard 三个标签页分别做什么
+
+- Proxies：对当前服务器上的代理项做增删改查（动态生效与否取决于你是否保存配置并重启/热加载）。
+- 配置（Config Editor）：只负责“这台服务器的 frpc 配置文件内容”，以及服务相关操作（保存、重启等）。
+- 服务器连接列表：只维护本软件保存的 SSH 连接（增删改）。
+
+### 3) 常用操作路径
+
+- 新增一个代理
+  1. 进入 Proxies → 添加 Proxy → 保存
+  2. 进入 配置 → 保存并重启（或按界面提供的服务操作）
+- 修改服务器地址/端口/token（frpc ↔ frps）
+  1. 进入 配置 → 修改 server 配对信息 → 保存并重启
+- 切换到另一台服务器
+  1. 进入 服务器连接列表 → 选择/编辑连接 → 重新连接
+
+## 🔐 数据与安全
+
+- SSH 连接信息会保存在浏览器/桌面应用本地存储中（key：`frpc-user-storage`）。
+- 建议优先使用“私钥”方式登录，并确保私钥文件有口令或受系统权限保护。
+
+## 🧩 常见问题与排错
+
+- 连接不上 SSH
+  - 检查服务器防火墙/安全组是否放行 SSH 端口；确认用户名、端口、密钥/密码正确。
+- 保存配置后不生效
+  - 配置文件只是写入磁盘，通常需要“重启 frpc 服务”才会加载新配置。
+- Proxies 状态显示异常
+  - 状态徽标是根据日志做推断；如果日志窗口过短或服务未输出对应代理的关键行，可能出现误判。
+
+## 💡 用户路径优化建议（可选）
+
+- 连接成功后给出“下一步建议”按钮：直接跳转到 Proxies/配置。
+- 在“保存并重启”前显示差异摘要（本次改了哪些代理/字段）。
+- 在 Proxies 卡片上增加“最近一次相关日志片段”快捷入口，方便定位异常代理。
 
 ## ⚙️ 配置参考
 

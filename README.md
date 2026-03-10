@@ -10,7 +10,7 @@
 
 <p align="center">
   <a href="./LICENSE"><img src="https://img.shields.io/badge/license-MIT-8A2BE2.svg" alt="License"></a>
-  <img src="https://img.shields.io/badge/version-0.1.7-8A2BE2.svg" alt="Version">
+  <img src="https://img.shields.io/badge/version-0.1.8-8A2BE2.svg" alt="Version">
   <a href="https://github.com/dukaworks/frpc-gui/actions/workflows/docker-publish.yml"><img src="https://github.com/dukaworks/frpc-gui/actions/workflows/docker-publish.yml/badge.svg" alt="Docker Build & Publish"></a>
   <br>
   <a href="https://x.com/dukatalk"><img src="https://img.shields.io/badge/X-Follow%20@dukatalk-black.svg?logo=x" alt="Follow on X"></a>
@@ -54,8 +54,8 @@
 #### Option 1: Docker Compose (Easiest)
 
 ```bash
-# Pull and run the latest official image
-docker-compose up -d
+# In this repository directory
+docker compose up -d
 ```
 
 Access the dashboard at `http://localhost:3000`.
@@ -66,9 +66,12 @@ Access the dashboard at `http://localhost:3000`.
 docker run -d \
   --name frpc-gui \
   -p 3000:3000 \
-  -v /path/to/your/frpc.toml:/etc/frp/frpc.toml \
   ghcr.io/dukaworks/frpc-gui:latest
 ```
+
+Notes:
+- If you use Frpc-GUI mainly to manage remote frpc via SSH, you don't need to mount any local config file.
+- If you want the container to edit a local `frpc.toml` on the host, mount it (e.g. `/etc/frp/frpc.toml`).
 
 ### Manual Installation
 

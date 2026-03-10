@@ -568,15 +568,15 @@ export default function Dashboard() {
             </div>
           </header>
 
-          <Card className="mb-6 border-amber-200 bg-amber-50">
+          <Card className="mb-6 border-amber-500/30 bg-card dark:border-amber-500/20">
             <CardHeader className="pb-2">
-              <CardTitle className="text-amber-800 flex items-center gap-2 text-lg">
-                <Activity className="h-5 w-5" />
+              <CardTitle className="text-foreground flex items-center gap-2 text-lg">
+                <Activity className="h-5 w-5 text-amber-600 dark:text-amber-400" />
                 未检测到正在运行的 frpc
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <p className="text-sm text-amber-800/80">
+              <p className="text-sm text-muted-foreground">
                 已建立 SSH 会话，但扫描未发现 frpc 进程。
                 <br/>
                 可能是服务未启动，或者配置文件错误导致启动失败。
@@ -923,20 +923,6 @@ export default function Dashboard() {
                 
                 <TabsContent value="edit" className="mt-0">
                     <div className="space-y-6">
-                      <div className="flex items-center justify-end">
-                        <Button size="sm" className="h-8" onClick={handleAddServer}>
-                          <Plus className="h-3.5 w-3.5 mr-1" />
-                          {t('dashboard.addServer')}
-                        </Button>
-                      </div>
-                      <ServerListOverview 
-                        profiles={serverProfiles}
-                        activeConfig={commonConfig}
-                        onAdd={handleAddServer}
-                        onEdit={handleEditServer}
-                        onDelete={(id) => handleDeleteServer(id)}
-                        onApply={handleApplyServer}
-                      />
                       {processInfo?.configPath && (
                         <ConfigEditor 
                           initialContent={hookContent} 
