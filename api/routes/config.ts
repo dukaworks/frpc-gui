@@ -113,7 +113,7 @@ router.post('/service', requireAuth, async (req: any, res) => {
 
 // Get Service Logs
 router.get('/logs', requireAuth, async (req: any, res) => {
-  const { type, serviceName, lines = 50 } = req.query;
+  const { type, serviceName, lines = 50, sinceHours } = req.query;
 
   if (!type || !serviceName) {
     return res.status(400).json({ error: 'Missing type or serviceName' });
@@ -121,16 +121,17 @@ router.get('/logs', requireAuth, async (req: any, res) => {
 
   try {
     let cmd = '';
-    // Limit lines to avoid huge payload
-    const n = Math.min(parseInt(lines as string) || 50, 200);
+    const n = Math.min(parseInt(lines as string) || 50, 2000);
+    const hours = Number.isFinite(Number(sinceHours)) ? Math.max(1, Number(sinceHours)) : null;
 
     if (type === 'docker') {
-      // Docker logs
-      // serviceName is container ID or name
-      cmd = `docker logs --tail ${n} ${serviceName} 2>&1`;
+      cmd = hours
+        ? `docker logs --since ${hours}h --tail ${n} ${serviceName} 2>&1`
+        : `docker logs --tail ${n} ${serviceName} 2>&1`;
     } else if (type === 'systemd') {
-      // Systemd logs
-      cmd = `journalctl -u ${serviceName} -n ${n} --no-pager`;
+      cmd = hours
+        ? `journalctl -u ${serviceName} --since "${hours} hours ago" -n ${n} --no-pager`
+        : `journalctl -u ${serviceName} -n ${n} --no-pager`;
     } else {
       return res.status(400).json({ error: 'Unsupported service type for logs' });
     }

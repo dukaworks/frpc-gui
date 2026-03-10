@@ -166,8 +166,8 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
           </TabsContent>
 
           <TabsContent value="display" className="space-y-4 py-4">
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="proxyPageSize" className="text-right">
+            <div className="grid grid-cols-12 items-center gap-4">
+              <Label htmlFor="proxyPageSize" className="col-span-5 text-right">
                 {t('settings.proxiesPerPage')}
               </Label>
               <Input
@@ -175,12 +175,12 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
                 type="number"
                 value={proxyPageSize}
                 onChange={(e) => setProxyPageSize(Number(e.target.value))}
-                className="col-span-3"
+                className="col-span-7"
                 min={1}
               />
             </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="serverPageSize" className="text-right">
+            <div className="grid grid-cols-12 items-center gap-4">
+              <Label htmlFor="serverPageSize" className="col-span-5 text-right">
                 {t('settings.serversPerPage')}
               </Label>
               <Input
@@ -188,7 +188,7 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
                 type="number"
                 value={serverPageSize}
                 onChange={(e) => setServerPageSize(Number(e.target.value))}
-                className="col-span-3"
+                className="col-span-7"
                 min={1}
               />
             </div>

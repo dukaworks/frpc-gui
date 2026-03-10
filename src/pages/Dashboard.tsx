@@ -105,19 +105,24 @@ export default function Dashboard() {
   // State for manual config mode
   const [logs, setLogs] = useState<string>('');
   const [logsLoading, setLogsLoading] = useState(false);
+  const [statusLogs, setStatusLogs] = useState<string>('');
   
+  const cleanAnsi = (raw: string) => raw.replace(/[\u001b\u009b][[()#;?]*(?:[0-9]{1,4}(?:;[0-9]{0,4})*)?[0-9A-ORZcf-nqry=><]/g, '');
+
   const fetchLogs = async () => {
     // Ensure we are connected before fetching
     if (!isConnected || !processInfo?.serviceName || !processInfo?.source) return;
     
     setLogsLoading(true);
     try {
-      const res = await ApiClient.fetchLogs(processInfo.source, processInfo.serviceName);
-      // Clean up logs: remove ANSI codes
-      const rawLogs = res.logs || '';
-      // Regex to remove ANSI color codes and other escape sequences
-      const cleanLogs = rawLogs.replace(/[\u001b\u009b][[()#;?]*(?:[0-9]{1,4}(?:;[0-9]{0,4})*)?[0-9A-ORZcf-nqry=><]/g, '');
+      const [recentRes, statusRes] = await Promise.all([
+        ApiClient.fetchLogs(processInfo.source, processInfo.serviceName, { lines: 80 }),
+        ApiClient.fetchLogs(processInfo.source, processInfo.serviceName, { lines: 2000, sinceHours: 2 })
+      ]);
+      const cleanLogs = cleanAnsi(recentRes.logs || '');
+      const cleanStatusLogs = cleanAnsi(statusRes.logs || '');
       setLogs(cleanLogs || t('dashboard.noLogsAvailable'));
+      setStatusLogs(cleanStatusLogs);
     } catch (e: any) {
       console.error("Failed to fetch logs", e);
       if (e.message === 'Not connected' || e.message?.includes('Not connected')) {
@@ -919,7 +924,7 @@ export default function Dashboard() {
                           onEdit={handleEditProxy}
                           onDelete={handleDeleteSingle}
                           onAdd={handleAddProxy}
-                          logs={logs}
+                          logs={statusLogs}
                         />
                     </div>
                 </TabsContent>

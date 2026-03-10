@@ -90,8 +90,17 @@ export class ApiClient {
     });
   }
 
-  static async fetchLogs(type: string, serviceName: string, lines = 50) {
-    return this.request(`/logs?type=${encodeURIComponent(type)}&serviceName=${encodeURIComponent(serviceName)}&lines=${lines}`);
+  static async fetchLogs(type: string, serviceName: string, options?: { lines?: number; sinceHours?: number }) {
+    const lines = options?.lines ?? 50;
+    const query = new URLSearchParams({
+      type,
+      serviceName,
+      lines: String(lines),
+    });
+    if (options?.sinceHours) {
+      query.set('sinceHours', String(options.sinceHours));
+    }
+    return this.request(`/logs?${query.toString()}`);
   }
 
   static async scan() {

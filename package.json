@@ -36,7 +36,10 @@
       "node_modules/**/*"
     ],
     "win": {
-      "target": "nsis",
+      "target": [
+        "nsis",
+        "zip"
+      ],
       "icon": "dist/favicon.png"
     },
     "mac": {
@@ -44,7 +47,9 @@
       "icon": "dist/favicon.png"
     },
     "linux": {
-      "target": "AppImage",
+      "target": [
+        "deb"
+      ],
       "icon": "dist/favicon.png"
     }
   },

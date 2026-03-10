@@ -6,19 +6,20 @@ import { useUserStore } from '@/store/userStore';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Loader2, Eye, EyeOff, KeyRound, Lock, ChevronDown, Check, Server } from 'lucide-react';
+import { Loader2, Eye, EyeOff, KeyRound, Lock, ChevronDown, Check, Server, Plus, Pencil, Trash2 } from 'lucide-react';
 import { SSHConfig } from '@/shared/types';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { useTranslation } from 'react-i18next';
+import { SshEditDialog } from '@/components/ConfigEditor/SshEditDialog';
 
 export default function Connect() {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const { setConnected, sessionId: storeSessionId, isConnected } = useFrpcStore();
-  const { savedConnections, addConnection, updateConnection } = useUserStore();
+  const { savedConnections, addConnection, updateConnection, removeConnection } = useUserStore();
   
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -28,6 +29,8 @@ export default function Connect() {
   // Combobox state
   const [showServerList, setShowServerList] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const [sshDialogOpen, setSshDialogOpen] = useState(false);
+  const [editingSsh, setEditingSsh] = useState<SSHConfig | null>(null);
 
   const [formData, setFormData] = useState({
     name: '',
@@ -167,6 +170,33 @@ export default function Connect() {
     });
   };
 
+  const handleOpenAddServer = () => {
+    setEditingSsh(null);
+    setSshDialogOpen(true);
+  };
+
+  const handleOpenEditServer = (conn: SSHConfig) => {
+    setEditingSsh(conn);
+    setSshDialogOpen(true);
+  };
+
+  const handleSaveServer = (data: SSHConfig) => {
+    if (data.id) {
+      updateConnection(data.id, data);
+    } else {
+      addConnection({
+        name: data.name,
+        host: data.host,
+        port: data.port,
+        username: data.username,
+        password: data.password,
+        privateKey: data.privateKey,
+        token: data.token
+      });
+    }
+    handleSelectServer(data);
+  };
+
   return (
     <div className="flex items-center justify-center min-h-screen bg-gray-100 dark:bg-gray-900 p-4">
       <Card className="w-full max-w-md shadow-lg">
@@ -176,6 +206,42 @@ export default function Connect() {
         
         <form onSubmit={handleSubmit}>
             <CardContent className="space-y-5">
+                <div className="space-y-2 border rounded-md p-3">
+                    <div className="flex items-center justify-between">
+                        <Label>{t('dashboard.serverList')}</Label>
+                        <Button type="button" size="sm" variant="outline" className="h-8" onClick={handleOpenAddServer}>
+                            <Plus className="h-3.5 w-3.5 mr-1" />
+                            {t('dashboard.addServer')}
+                        </Button>
+                    </div>
+                    {savedConnections.length === 0 ? (
+                        <p className="text-sm text-muted-foreground">{t('noSavedServers')}</p>
+                    ) : (
+                        <div className="space-y-1.5 max-h-40 overflow-y-auto">
+                            {savedConnections.map((conn) => (
+                                <div key={conn.id} className="flex items-center justify-between rounded-md border px-2.5 py-2">
+                                    <button
+                                        type="button"
+                                        className="text-left min-w-0 flex-1"
+                                        onClick={() => handleSelectServer(conn)}
+                                    >
+                                        <p className="text-sm font-medium truncate">{conn.name}</p>
+                                        <p className="text-xs text-muted-foreground truncate">{conn.username}@{conn.host}:{conn.port}</p>
+                                    </button>
+                                    <div className="flex items-center gap-1 ml-2">
+                                        <Button type="button" variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleOpenEditServer(conn)}>
+                                            <Pencil className="h-3.5 w-3.5" />
+                                        </Button>
+                                        <Button type="button" variant="ghost" size="icon" className="h-7 w-7 text-red-600 hover:text-red-700" onClick={() => removeConnection(conn.id)}>
+                                            <Trash2 className="h-3.5 w-3.5" />
+                                        </Button>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </div>
+
                 {/* Combined Server Name / Saved Selection */}
                 <div className="space-y-2 relative" ref={dropdownRef}>
                     <Label>{t('serverLabel')}</Label>
@@ -364,6 +430,12 @@ export default function Connect() {
             </CardFooter>
         </form>
       </Card>
+      <SshEditDialog
+        open={sshDialogOpen}
+        onOpenChange={setSshDialogOpen}
+        initialData={editingSsh}
+        onSave={handleSaveServer}
+      />
     </div>
   );
 }

@@ -28,20 +28,27 @@ interface ProxyListOverviewProps {
 }
 
 function getProxyStatus(proxyName: string, logs?: string): 'online' | 'error' {
-  if (!logs) return 'online'; // Default to online if no logs
-  
+  if (!logs?.trim()) return 'error';
+
   const lines = logs.split('\n');
-  let hasError = false;
-  
-  // Iterate through logs to find any error for this proxy
-  for (const line of lines) {
-    if (line.includes(`[${proxyName}]`) && (line.includes('error') || line.includes('login to server failed'))) {
-      hasError = true;
-      break; // Found an error, that's enough
+  const target = `[${proxyName}]`.toLowerCase();
+  const errorPatterns = ['error', 'failed', 'timeout', 'refused', 'closed', 'disconnect'];
+  const alivePatterns = ['start proxy success', 'new proxy', 'proxy added', 'work connection', 'login to server success'];
+  let hasActivity = false;
+
+  for (const rawLine of lines) {
+    const line = rawLine.toLowerCase();
+    if (!line.includes(target)) continue;
+    hasActivity = true;
+    if (errorPatterns.some((pattern) => line.includes(pattern))) {
+      return 'error';
+    }
+    if (alivePatterns.some((pattern) => line.includes(pattern))) {
+      return 'online';
     }
   }
-  
-  return hasError ? 'error' : 'online';
+
+  return hasActivity ? 'online' : 'error';
 }
 
 export function ProxyListOverview({ 
