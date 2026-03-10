@@ -6,7 +6,6 @@ export interface SSHConfig {
   username: string;
   password?: string; // Optional if privateKey used
   privateKey?: string;
-  token?: string; // FRPS Token
   lastConnected?: number;
 }
 

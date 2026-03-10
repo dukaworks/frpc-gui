@@ -148,20 +148,6 @@ export function SshEditDialog({ open, onOpenChange, initialData, onSave }: SshEd
             />
           </div>
 
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="token" className="text-right">
-              FRPS Token
-            </Label>
-            <Input
-              id="token"
-              type="password"
-              value={formData.token || ''}
-              onChange={(e) => updateField({ token: e.target.value })}
-              className="col-span-3"
-              placeholder="FRPS Auth Token (Optional)"
-            />
-          </div>
-
           <div className="grid grid-cols-4 items-start gap-4">
              <Label className="text-right pt-2">{t('ssh.authMethod')}</Label>
              <div className="col-span-3 space-y-3">

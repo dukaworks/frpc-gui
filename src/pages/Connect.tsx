@@ -190,8 +190,7 @@ export default function Connect() {
         port: data.port,
         username: data.username,
         password: data.password,
-        privateKey: data.privateKey,
-        token: data.token
+        privateKey: data.privateKey
       });
     }
     handleSelectServer(data);
@@ -208,10 +207,10 @@ export default function Connect() {
             <CardContent className="space-y-5">
                 <div className="space-y-2 border rounded-md p-3">
                     <div className="flex items-center justify-between">
-                        <Label>{t('dashboard.serverList')}</Label>
+                        <Label>{t('ssh.connectionList')}</Label>
                         <Button type="button" size="sm" variant="outline" className="h-8" onClick={handleOpenAddServer}>
                             <Plus className="h-3.5 w-3.5 mr-1" />
-                            {t('dashboard.addServer')}
+                            {t('ssh.addConnection')}
                         </Button>
                     </div>
                     {savedConnections.length === 0 ? (

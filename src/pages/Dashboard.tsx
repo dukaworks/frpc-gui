@@ -6,7 +6,7 @@ import { ApiClient } from '@/lib/api';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, Terminal, FileText, Activity, Server, Box, Eye, Edit3, Save, Play, ArrowLeft, LayoutGrid, Settings, Plus, RotateCw, Power, RefreshCw, CheckSquare, Square, Trash2, Globe, Lock, BarChart, Download, Upload } from 'lucide-react';
+import { Loader2, Terminal, FileText, Activity, Server, Edit3, ArrowLeft, LayoutGrid, Settings, Plus, RotateCw, Power, RefreshCw, CheckSquare, Trash2, Globe, Lock, BarChart, Download, Upload } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ConfigEditor } from '@/components/ConfigEditor';
 import { ProxyListOverview } from '@/components/ConfigEditor/ProxyListOverview';
@@ -82,7 +82,7 @@ export default function Dashboard() {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const navigate = useNavigate();
   const { isConnected, processInfo, disconnect, setProcessInfo, restartRequired, setRestartRequired } = useFrpcStore();
-  const { savedConnections } = useUserStore();
+  const { savedConnections, addConnection, updateConnection, removeConnection } = useUserStore();
   const [configContent, setConfigContent] = useState('');
   const [loadingConfig, setLoadingConfig] = useState(false);
   const [serviceLoading, setServiceLoading] = useState(false);
@@ -174,8 +174,6 @@ export default function Dashboard() {
   const [editingServerProfile, setEditingServerProfile] = useState<ServerProfile | null>(null);
   const [sshEditDialogOpen, setSshEditDialogOpen] = useState(false);
   const [editingSshProfile, setEditingSshProfile] = useState<SSHConfig | null>(null);
-  
-  const { updateConnection, removeConnection } = useUserStore();
 
   useEffect(() => {
     localStorage.setItem('frpc_server_profiles', JSON.stringify(serverProfiles));
@@ -186,41 +184,35 @@ export default function Dashboard() {
     setServerEditDialogOpen(true);
   };
 
-  // Merge SSH Connections into Profiles
-  const allProfiles = useMemo(() => {
-    // Map SSH connections to ServerProfile
-    const sshProfiles: ServerProfile[] = savedConnections.map(ssh => ({
-        id: `ssh_${ssh.id}`,
-        name: ssh.name,
-        serverAddr: ssh.host,
-        serverPort: 7000, // Default FRPS port
-        token: ssh.token || '', // Use token from SSH config
-        isSshImport: true, // Custom flag for UI
-        sshId: ssh.id
-    } as any));
-
-    return [...serverProfiles, ...sshProfiles];
-  }, [serverProfiles, savedConnections]);
-
   const handleEditServer = (profile: ServerProfile) => {
-    if ((profile as any).isSshImport) {
-        const sshId = (profile as any).sshId;
-        const sshConfig = savedConnections.find(c => c.id === sshId);
-        if (sshConfig) {
-            setEditingSshProfile(sshConfig);
-            setSshEditDialogOpen(true);
-        }
-        return;
-    }
     setEditingServerProfile(profile);
     setServerEditDialogOpen(true);
   };
 
-  const handleSaveSsh = (data: SSHConfig) => {
-      if (data.id) {
-          updateConnection(data.id, data);
-      }
-      setSshEditDialogOpen(false);
+  const handleAddSshConnection = () => {
+    setEditingSshProfile(null);
+    setSshEditDialogOpen(true);
+  };
+
+  const handleEditSshConnection = (data: SSHConfig) => {
+    setEditingSshProfile(data);
+    setSshEditDialogOpen(true);
+  };
+
+  const handleSaveSshConnection = (data: SSHConfig) => {
+    if (data.id) {
+      updateConnection(data.id, data);
+    } else {
+      addConnection({
+        name: data.name,
+        host: data.host,
+        port: data.port,
+        username: data.username,
+        password: data.password,
+        privateKey: data.privateKey,
+      });
+    }
+    setSshEditDialogOpen(false);
   };
 
   const handleSaveServer = (profile: ServerProfile) => {
@@ -849,9 +841,9 @@ export default function Dashboard() {
                           <Settings className="h-4 w-4 mr-2" />
                           {t('dashboard.configEditor')}
                       </TabsTrigger>
-                      <TabsTrigger value="servers">
+                      <TabsTrigger value="ssh">
                           <Server className="h-4 w-4 mr-2" />
-                          {t('dashboard.serverList')}
+                          {t('ssh.connectionList')}
                       </TabsTrigger>
                     </TabsList>
                 </div>
@@ -929,36 +921,67 @@ export default function Dashboard() {
                     </div>
                 </TabsContent>
                 
-                <TabsContent value="servers" className="mt-0">
+                <TabsContent value="edit" className="mt-0">
                     <div className="space-y-6">
-                      <div className="flex items-center justify-end mb-6">
-                           <Button size="sm" className="h-8" onClick={handleAddServer}>
-                              <Plus className="h-3.5 w-3.5 mr-1" />
-                              {t('dashboard.addServer')}
-                           </Button>
+                      <div className="flex items-center justify-end">
+                        <Button size="sm" className="h-8" onClick={handleAddServer}>
+                          <Plus className="h-3.5 w-3.5 mr-1" />
+                          {t('dashboard.addServer')}
+                        </Button>
                       </div>
                       <ServerListOverview 
-                        profiles={allProfiles}
+                        profiles={serverProfiles}
                         activeConfig={commonConfig}
                         onAdd={handleAddServer}
                         onEdit={handleEditServer}
                         onDelete={(id) => handleDeleteServer(id)}
                         onApply={handleApplyServer}
                       />
+                      {processInfo?.configPath && (
+                        <ConfigEditor 
+                          initialContent={hookContent} 
+                          path={processInfo.configPath}
+                          defaultTab="server"
+                          hideTabs={true}
+                          onSave={() => handleServiceAction('restart')}
+                          onConfigSaved={() => setRestartRequired(true)} 
+                        />
+                      )}
                     </div>
                 </TabsContent>
-                
-                <TabsContent value="edit" className="mt-0">
-                    {processInfo?.configPath && (
-                        <ConfigEditor 
-                            initialContent={hookContent} 
-                            path={processInfo.configPath}
-                            defaultTab="server"
-                            hideTabs={true}
-                            onSave={() => handleServiceAction('restart')}
-                            onConfigSaved={() => setRestartRequired(true)} 
-                        />
+
+                <TabsContent value="ssh" className="mt-0">
+                  <div className="space-y-6">
+                    <div className="flex items-center justify-end">
+                      <Button size="sm" className="h-8" onClick={handleAddSshConnection}>
+                        <Plus className="h-3.5 w-3.5 mr-1" />
+                        {t('ssh.addConnection')}
+                      </Button>
+                    </div>
+
+                    {savedConnections.length === 0 ? (
+                      <div className="text-sm text-muted-foreground">{t('noSavedServers')}</div>
+                    ) : (
+                      <div className="space-y-2">
+                        {savedConnections.map((conn) => (
+                          <div key={conn.id} className="flex items-center justify-between rounded-md border px-3 py-2">
+                            <div className="min-w-0 flex-1">
+                              <p className="text-sm font-medium truncate">{conn.name}</p>
+                              <p className="text-xs text-muted-foreground truncate">{conn.username}@{conn.host}:{conn.port}</p>
+                            </div>
+                            <div className="flex items-center gap-1 ml-2">
+                              <Button type="button" variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleEditSshConnection(conn)}>
+                                <Edit3 className="h-3.5 w-3.5" />
+                              </Button>
+                              <Button type="button" variant="ghost" size="icon" className="h-7 w-7 text-red-600 hover:text-red-700" onClick={() => handleDeleteServer(`ssh_${conn.id}`)}>
+                                <Trash2 className="h-3.5 w-3.5" />
+                              </Button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
                     )}
+                  </div>
                 </TabsContent>
               </Tabs>
             )}
@@ -985,7 +1008,7 @@ export default function Dashboard() {
         open={sshEditDialogOpen}
         onOpenChange={setSshEditDialogOpen}
         initialData={editingSshProfile}
-        onSave={handleSaveSsh}
+        onSave={handleSaveSshConnection}
       />
 
           <AlertDialog open={feedbackOpen} onOpenChange={setFeedbackOpen}>

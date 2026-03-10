@@ -147,6 +147,8 @@
     "errorAddrEmpty": "服务器地址不能为空"
   },
   "ssh": {
+    "connectionList": "服务器连接列表",
+    "addConnection": "添加连接",
     "editTitle": "编辑 SSH 连接",
     "addTitle": "新增 SSH 连接",
     "editDesc": "配置远程服务器 SSH 详情。这将更新您保存的连接。",

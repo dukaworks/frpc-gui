@@ -147,6 +147,8 @@
     "errorAddrEmpty": "Server Address cannot be empty"
   },
   "ssh": {
+    "connectionList": "SSH Connections",
+    "addConnection": "Add Connection",
     "editTitle": "Edit SSH Connection",
     "addTitle": "Add SSH Connection",
     "editDesc": "Configure remote server SSH details. This will update your saved connections.",

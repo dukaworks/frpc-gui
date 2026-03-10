@@ -76,7 +76,6 @@ export function ServerListOverview({
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
             {paginatedProfiles.map((profile) => {
               const active = isActive(profile);
-              const isSsh = (profile as any).isSshImport;
               
               return (
                 <Card 
@@ -89,11 +88,6 @@ export function ServerListOverview({
                   <CardHeader className="flex flex-row items-start justify-between space-y-0 pb-2">
                     <div className="space-y-1">
                       <CardTitle className="text-base font-medium flex items-center gap-2">
-                        {isSsh ? (
-                            <Badge variant="secondary" className="text-[10px] h-5 bg-blue-100 text-blue-700 hover:bg-blue-100">{t('common.ssh')}</Badge>
-                        ) : (
-                            <Badge variant="secondary" className="text-[10px] h-5 bg-orange-100 text-orange-700 hover:bg-orange-100">{t('common.manual')}</Badge>
-                        )}
                         <span className="truncate max-w-[150px]" title={profile.name}>{profile.name}</span>
                         {active && (
                             <Badge variant="default" className="text-[10px] h-5 bg-green-600 hover:bg-green-700 gap-1 pl-1">
@@ -124,37 +118,18 @@ export function ServerListOverview({
                             </DropdownMenuItem>
                         )}
                         
-                        {isSsh ? (
-                            <>
-                               <DropdownMenuItem onClick={() => onEdit(profile)}>
-                                  <Edit2 className="mr-2 h-4 w-4" />
-                                  {t('common.editConnection')}
-                               </DropdownMenuItem>
-                               <DropdownMenuSeparator />
-                               <DropdownMenuItem 
-                                  onClick={() => onDelete(profile.id)}
-                                  className="text-red-600 focus:text-red-600 focus:bg-red-50"
-                               >
-                                  <Trash2 className="mr-2 h-4 w-4" />
-                                  {t('common.delete')}
-                               </DropdownMenuItem>
-                            </>
-                        ) : (
-                            <>
-                              <DropdownMenuItem onClick={() => onEdit(profile)}>
-                                  <Edit2 className="mr-2 h-4 w-4" />
-                                  {t('common.edit')}
-                              </DropdownMenuItem>
-                              <DropdownMenuSeparator />
-                              <DropdownMenuItem 
-                                  onClick={() => onDelete(profile.id)}
-                                  className="text-red-600 focus:text-red-600 focus:bg-red-50"
-                              >
-                                  <Trash2 className="mr-2 h-4 w-4" />
-                                  {t('common.delete')}
-                              </DropdownMenuItem>
-                            </>
-                        )}
+                        <DropdownMenuItem onClick={() => onEdit(profile)}>
+                          <Edit2 className="mr-2 h-4 w-4" />
+                          {t('common.edit')}
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem 
+                          onClick={() => onDelete(profile.id)}
+                          className="text-red-600 focus:text-red-600 focus:bg-red-50"
+                        >
+                          <Trash2 className="mr-2 h-4 w-4" />
+                          {t('common.delete')}
+                        </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </CardHeader>
