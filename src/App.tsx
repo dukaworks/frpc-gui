@@ -4,6 +4,7 @@ import Connect from './pages/Connect';
 import ConnectSimple from './pages/ConnectSimple';
 import Dashboard from './pages/Dashboard';
 import { TooltipProvider } from '@/components/ui/tooltip';
+import { Footer } from '@/components/Footer';
 
 class ErrorBoundary extends React.Component<
   { children: React.ReactNode },
@@ -69,12 +70,17 @@ function App() {
     <TooltipProvider>
       <ErrorBoundary>
         <BrowserRouter>
-          <Routes>
-            <Route path="/" element={<Connect />} />
-            <Route path="/simple" element={<ConnectSimple />} />
-            <Route path="/dashboard" element={<Dashboard />} />
-            <Route path="*" element={<Navigate to="/" replace />} />
-          </Routes>
+          <div className="flex min-h-screen flex-col">
+            <div className="flex-1">
+              <Routes>
+                <Route path="/" element={<Connect />} />
+                <Route path="/simple" element={<ConnectSimple />} />
+                <Route path="/dashboard" element={<Dashboard />} />
+                <Route path="*" element={<Navigate to="/" replace />} />
+              </Routes>
+            </div>
+            <Footer />
+          </div>
         </BrowserRouter>
       </ErrorBoundary>
     </TooltipProvider>

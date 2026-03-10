@@ -111,7 +111,10 @@ export function ConfigEditor({ initialContent, path, onSave, onConfigSaved, defa
           <div className="flex items-center justify-between sm:justify-start gap-3">
             <div className="flex flex-col">
                 <div className="flex items-center gap-2">
-                    <h3 className="text-lg font-medium">配置编辑器</h3>
+                    <TabsList className="grid w-full max-w-[200px] grid-cols-2">
+                        <TabsTrigger value="server">Server</TabsTrigger>
+                        <TabsTrigger value="code">Code</TabsTrigger>
+                    </TabsList>
                     <Tooltip>
                         <TooltipTrigger asChild>
                             <Button 
@@ -135,7 +138,7 @@ export function ConfigEditor({ initialContent, path, onSave, onConfigSaved, defa
           <div className="flex gap-2">
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <Button onClick={() => handleSave(false)} disabled={saving || isLocked} variant="outline" className="border-primary text-primary hover:bg-primary/10">
+                  <Button onClick={() => handleSave(false)} disabled={saving || isLocked} variant="outline" className="border-primary text-primary hover:bg-primary hover:text-primary-foreground">
                      {saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
                      Save
                   </Button>
@@ -186,7 +189,7 @@ export function ConfigEditor({ initialContent, path, onSave, onConfigSaved, defa
                <div className="flex gap-2">
                    <Tooltip>
                      <TooltipTrigger asChild>
-                       <Button onClick={() => handleSave(false)} disabled={saving || isLocked} size="sm" variant="outline" className="border-primary text-primary hover:bg-primary/10 h-8">
+                       <Button onClick={() => handleSave(false)} disabled={saving || isLocked} size="sm" variant="outline" className="border-primary text-primary hover:bg-primary hover:text-primary-foreground h-8">
                         {saving ? <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" /> : <Save className="mr-2 h-3.5 w-3.5" />}
                         Save
                        </Button>

@@ -21,6 +21,24 @@ interface ProxyListOverviewProps {
   onEdit: (proxy: ProxyConfig) => void;
   onDelete: (name: string) => void;
   onAdd: () => void;
+  logs?: string;
+}
+
+function getProxyStatus(proxyName: string, logs?: string): 'online' | 'error' {
+  if (!logs) return 'online'; // Default to online if no logs
+  
+  const lines = logs.split('\n');
+  let hasError = false;
+  
+  // Iterate through logs to find any error for this proxy
+  for (const line of lines) {
+    if (line.includes(`[${proxyName}]`) && (line.includes('error') || line.includes('login to server failed'))) {
+      hasError = true;
+      break; // Found an error, that's enough
+    }
+  }
+  
+  return hasError ? 'error' : 'online';
 }
 
 export function ProxyListOverview({ 
@@ -31,7 +49,8 @@ export function ProxyListOverview({
   onToggleSelection, 
   onEdit, 
   onDelete,
-  onAdd
+  onAdd,
+  logs
 }: ProxyListOverviewProps) {
   
   if (parseError) {
@@ -86,6 +105,8 @@ export function ProxyListOverview({
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
       {proxies.map(p => {
         const isSelected = selectedProxies.has(p.name);
+        const status = getProxyStatus(p.name, logs);
+        
         return (
           <Card 
             key={p.name} 
@@ -100,62 +121,76 @@ export function ProxyListOverview({
               
               if (selectionMode) {
                 onToggleSelection(p.name);
+              } else {
+                onEdit(p);
               }
             }}
           >
-             <CardContent className="p-4 space-y-3">
-                <div className="flex justify-between items-start gap-2">
-                   <div className="font-semibold truncate flex-1" title={p.name}>{p.name}</div>
-                   {/* Badge moved to second line */}
+            <CardContent className="p-4">
+              <div className="flex justify-between items-start mb-3">
+                <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2">
+                    {status === 'online' && (
+                      <Badge className="bg-green-500 hover:bg-green-600 border-none h-2 w-2 p-0 rounded-full" title="Online" />
+                    )}
+                    {status === 'error' && (
+                      <Badge className="bg-red-500 hover:bg-red-600 border-none h-2 w-2 p-0 rounded-full" title="Error" />
+                    )}
+                    <h3 className="font-semibold text-sm truncate max-w-[120px]" title={p.name}>{p.name}</h3>
+                  </div>
+                  <Badge variant="outline" className="text-xs font-normal border-primary/20 text-primary bg-primary/5 uppercase">
+                    {p.type}
+                  </Badge>
                 </div>
                 
-                <div className="text-sm text-muted-foreground flex items-center gap-2 flex-wrap">
-                   <Badge variant="secondary" className="uppercase text-xs font-mono shrink-0 mr-1">{p.type}</Badge>
-                   <span className="font-mono text-xs bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded">
-                      {getLocalAddress(p)}
-                   </span>
-                   <ArrowRight className="h-3 w-3" />
-                   <span className="font-medium text-foreground">
-                      {getRemoteAddress(p)}
-                   </span>
-                </div>
-                
-                {p.type !== 'tcp' && p.type !== 'udp' && p.customDomains && p.customDomains.length > 1 && (
-                    <div className="text-xs text-muted-foreground truncate" title={p.customDomains.join(', ')}>
-                        +{p.customDomains.length - 1} more domains
-                    </div>
-                )}
-
-                {/* Selection Checkbox */}
-                {selectionMode && (
-                  <div className="absolute top-3 right-3 pointer-events-none">
+                <div className="flex gap-1" onClick={e => e.stopPropagation()}>
+                  {selectionMode && (
                     <Checkbox 
                       checked={isSelected}
-                      className="data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground border-primary h-5 w-5"
+                      onCheckedChange={() => onToggleSelection(p.name)}
                     />
-                  </div>
-                )}
-
-                {/* Actions Menu (Only when not in selection mode) */}
-                {!selectionMode && (
-                  <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                  )}
+                  
+                  {!selectionMode && (
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon" className="h-8 w-8">
-                          <MoreHorizontal className="h-4 w-4" />
+                        <Button variant="ghost" size="icon" className="h-6 w-6 -mt-1 -mr-2">
+                          <MoreHorizontal className="h-4 w-4 text-muted-foreground" />
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={() => onEdit(p)}>
-                          <Pencil className="mr-2 h-4 w-4" /> Edit
+                        <DropdownMenuItem onClick={() => onEdit(p)} className="hover:bg-primary hover:text-primary-foreground focus:bg-primary focus:text-primary-foreground cursor-pointer">
+                          <Pencil className="mr-2 h-4 w-4" />
+                          Edit
                         </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => onDelete(p.name)} className="text-red-600 focus:text-red-600">
-                          <Trash2 className="mr-2 h-4 w-4" /> Delete
+                        <DropdownMenuItem 
+                          onClick={() => onDelete(p.name)}
+                          className="text-red-600 hover:bg-red-50 hover:text-red-700 focus:bg-red-50 focus:text-red-700 cursor-pointer"
+                        >
+                          <Trash2 className="mr-2 h-4 w-4" />
+                          Delete
                         </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
+                  )}
+                </div>
+              </div>
+
+              <div className="text-sm text-muted-foreground flex items-center gap-2 flex-wrap">
+                 <span className="font-mono text-xs bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded">
+                    {getLocalAddress(p)}
+                 </span>
+                 <ArrowRight className="h-3 w-3" />
+                 <span className="font-medium text-foreground">
+                    {getRemoteAddress(p)}
+                 </span>
+              </div>
+              
+              {p.type !== 'tcp' && p.type !== 'udp' && p.customDomains && p.customDomains.length > 1 && (
+                  <div className="text-xs text-muted-foreground truncate" title={p.customDomains.join(', ')}>
+                      +{p.customDomains.length - 1} more domains
                   </div>
-                )}
+              )}
              </CardContent>
           </Card>
         );

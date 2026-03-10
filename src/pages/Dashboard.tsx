@@ -442,19 +442,9 @@ export default function Dashboard() {
 
   if (!isConnected) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 p-6">
-        <div className="max-w-md w-full bg-white rounded-lg shadow p-6">
-          <h1 className="text-xl font-bold mb-2">未连接到 FRPC</h1>
-          <p className="text-sm text-gray-600 mb-4">请先在首页建立连接，再进入 Dashboard。</p>
-          <div className="flex gap-3">
-            <button
-              className="px-4 py-2 rounded-md bg-blue-600 text-white hover:bg-blue-700"
-              onClick={() => navigate('/')}
-            >
-              返回首页
-            </button>
-          </div>
-        </div>
+      <div className="flex min-h-screen items-center justify-center bg-background">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <span className="ml-2 text-muted-foreground">Redirecting...</span>
       </div>
     );
   }
@@ -474,7 +464,7 @@ export default function Dashboard() {
                  </TooltipTrigger>
                  <TooltipContent>Back to Connect</TooltipContent>
                </Tooltip>
-               <h1 className="text-2xl font-bold">FRPC Manager Dashboard</h1>
+               <h1 className="text-2xl font-bold text-purple-600 dark:text-purple-400">FRPC Manager Dashboard</h1>
             </div>
             <div className="flex gap-2">
               <Tooltip>
@@ -563,16 +553,25 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-6">
-      <div className="max-w-7xl mx-auto space-y-6">
-        <header className="flex justify-between items-center">
-            <h1 className="text-2xl font-bold">FRPC Manager Dashboard</h1>
-            <div className="space-x-2">
-                <Button variant="ghost" size="icon" onClick={handleLogout} className="rounded-full">
-                    <Power className="h-5 w-5 text-muted-foreground hover:text-destructive" />
-                </Button>
-            </div>
-        </header>
+    <div className="min-h-screen bg-background">
+      {/* Header */}
+      <header className="sticky top-0 z-10 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+        <div className="container flex h-16 items-center justify-between">
+          <div className="flex items-center gap-2">
+            <h1 className="text-xl font-bold text-purple-600 dark:text-purple-400">FRPC Manager Dashboard</h1>
+          </div>
+          
+          <Button 
+            size="sm" 
+            onClick={handleLogout}
+            className="text-primary border border-primary hover:bg-primary hover:text-primary-foreground bg-transparent"
+          >
+            <Power className="mr-2 h-4 w-4" />
+            Logout
+          </Button>
+        </div>
+      </header>
+      <div className="container py-6 space-y-6">
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {/* Card 1: Health & Uptime */}
@@ -655,11 +654,11 @@ export default function Dashboard() {
         {/* Card 3: Real-time Logs */}
         <Card className="flex flex-col h-64 bg-slate-950 text-slate-50 border-slate-800">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 border-b border-slate-800/50">
-             <CardTitle className="text-sm font-medium text-slate-400 flex items-center gap-2">
+             <CardTitle className="text-sm font-medium text-purple-400 flex items-center gap-2">
                 <Terminal className="h-4 w-4" />
                 Recent Logs
              </CardTitle>
-             <Badge variant="outline" className="text-[10px] h-5 border-slate-700 text-slate-400">
+             <Badge variant="outline" className="text-[10px] h-5 border-purple-500/30 text-purple-400">
                  Live
              </Badge>
           </CardHeader>
@@ -673,24 +672,48 @@ export default function Dashboard() {
                  ) : (
                      <div className="space-y-1">
                          {logs ? logs.split('\n').filter(line => line.trim()).map((line, i) => {
-                             // Highlight errors
+                             // Highlight errors - Changed to Purple-400 for errors to match theme
                              const isError = line.includes('[E]') || line.toLowerCase().includes('error');
+                             
+                             // Convert UTC timestamp to local time if present
+                             // Matches format: 2024/03/10 12:00:00 [I] ...
+                             const timestampRegex = /^(\d{4}\/\d{2}\/\d{2} \d{2}:\d{2}:\d{2})/;
+                             const match = line.match(timestampRegex);
+                             
+                             let displayLine = line;
+                             if (match) {
+                               const utcTimeStr = match[1];
+                               // Treat as UTC by appending 'Z'
+                               const utcDate = new Date(utcTimeStr.replace(/\//g, '-') + 'Z');
+                               if (!isNaN(utcDate.getTime())) {
+                                 const localTimeStr = utcDate.toLocaleString();
+                                 displayLine = line.replace(utcTimeStr, localTimeStr);
+                               }
+                             }
+
                              return (
-                                 <div key={i} className={`whitespace-pre-wrap break-all leading-tight py-0.5 border-b border-white/5 pb-1 ${isError ? 'text-red-400' : 'text-slate-300'}`}>
-                                     {line}
+                                 <div key={i} className={`whitespace-pre-wrap break-all leading-tight py-0.5 border-b border-white/5 pb-1 ${isError ? 'text-purple-400' : 'text-slate-300'}`}>
+                                     {displayLine}
                                  </div>
                              );
                          }) : (
-                             <div className="text-slate-500">No logs available.</div>
+                             <div className="text-slate-500 italic">No logs available</div>
                          )}
                      </div>
                  )}
              </div>
-             <div className="absolute bottom-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                 <Button size="xs" variant="secondary" className="h-6 text-[10px] bg-slate-800 text-slate-300 hover:bg-slate-700 hover:text-white" onClick={fetchLogs}>
-                     <RefreshCw className="h-3 w-3 mr-1" /> Refresh
-                 </Button>
-             </div>
+             
+             {/* Refresh Button */}
+             <Button 
+                variant="ghost" 
+                size="sm" 
+                className="absolute bottom-2 right-2 h-7 text-xs bg-slate-900/80 hover:bg-purple-500/20 text-purple-400 border border-purple-500/30 backdrop-blur-sm opacity-0 group-hover:opacity-100 transition-opacity"
+                onClick={fetchLogs}
+                disabled={logsLoading}
+             >
+                <RefreshCw className={`h-3 w-3 mr-1 ${logsLoading ? 'animate-spin' : ''}`} />
+                Refresh
+             </Button>
           </CardContent>
         </Card>
 
@@ -775,14 +798,15 @@ export default function Dashboard() {
                           onEdit={handleEditProxy}
                           onDelete={handleDeleteSingle}
                           onAdd={handleAddProxy}
+                          logs={logs}
                         />
                     </div>
                 </TabsContent>
                 
                 <TabsContent value="servers" className="mt-0">
                     <div className="space-y-6">
-                      <div className="flex items-center justify-end gap-2">
-                           <Button size="sm" variant="outline" className="h-8" onClick={handleAddServer}>
+                      <div className="flex items-center justify-end mb-6">
+                           <Button size="sm" className="h-8" onClick={handleAddServer}>
                               <Plus className="h-3.5 w-3.5 mr-1" />
                               Add Server
                            </Button>

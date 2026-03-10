@@ -349,9 +349,15 @@ export default function Connect() {
                 )}
             </CardContent>
             <CardFooter>
-                <Button type="submit" className="w-full" disabled={loading} variant="outline">
-                    {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                    OK
+                <Button type="submit" className="w-full h-11 bg-transparent text-primary border border-primary hover:bg-primary hover:text-primary-foreground" disabled={loading}>
+                    {loading ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Connecting...
+                      </>
+                    ) : (
+                      'OK'
+                    )}
                 </Button>
             </CardFooter>
         </form>

@@ -1,7 +1,7 @@
 {
   "name": "frpc-gui",
   "private": false,
-  "version": "0.1.5",
+  "version": "0.1.6",
   "description": "Web-based GUI for managing FRPC configurations remotely via SSH",
   "license": "MIT",
   "repository": {
