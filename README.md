@@ -1,26 +1,18 @@
 # FRPC GUI
 
-<p align="center">
-  <img src="public/dukaworks-logo-up-with-words.png" alt="DukaWorks Logo" width="200" />
-</p>
+![DukaWorks Logo](public/dukaworks-logo-up-with-words.png)
 
-<p align="center">
-  <strong>Web-based GUI for managing FRPC configurations remotely via SSH</strong>
-</p>
+**Web-based GUI for managing FRPC configurations remotely via SSH**
 
-<p align="center">
-  <a href="./LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="License"></a>
-  <img src="https://img.shields.io/badge/version-0.1.5-green.svg" alt="Version">
-  <a href="https://github.com/dukaworks/frpc-gui/actions/workflows/docker-publish.yml"><img src="https://github.com/dukaworks/frpc-gui/actions/workflows/docker-publish.yml/badge.svg" alt="Docker Build & Publish"></a>
-  <br>
-  <a href="https://x.com/dukatalk"><img src="https://img.shields.io/badge/X-Follow%20@dukatalk-black.svg?logo=x" alt="Follow on X"></a>
-  <a href="https://t.me/zychen2022"><img src="https://img.shields.io/badge/Telegram-Channel-blue.svg?logo=telegram" alt="Telegram Channel"></a>
-  <a href="https://t.me/+wmMDJOMbU9FhMmNl"><img src="https://img.shields.io/badge/Telegram-Community-blue.svg?logo=telegram" alt="Telegram Community"></a>
-</p>
+[![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+![Version](https://img.shields.io/badge/version-0.1.5-green.svg)
+[![Docker Build & Publish](https://github.com/dukaworks/frpc-gui/actions/workflows/docker-publish.yml/badge.svg)](https://github.com/dukaworks/frpc-gui/actions/workflows/docker-publish.yml)
 
-<p align="center">
-  [ <strong>English</strong> | <a href="./README_zh.md">中文</a> ]
-</p>
+[![Follow on X](https://img.shields.io/badge/X-Follow%20@dukatalk-black.svg?logo=x)](https://x.com/dukatalk)
+[![Telegram Channel](https://img.shields.io/badge/Telegram-Channel-blue.svg?logo=telegram)](https://t.me/zychen2022)
+[![Telegram Community](https://img.shields.io/badge/Telegram-Community-blue.svg?logo=telegram)](https://t.me/+wmMDJOMbU9FhMmNl)
+
+[ **English** | [中文](./README_zh.md) ]
 
 ---
 
@@ -103,6 +95,4 @@ This project is licensed under the MIT License - see the [LICENSE](./LICENSE) fi
 
 ---
 
-<p align="center">
-  <sub>Built with ❤️ by <a href="https://github.com/dukaworks">DukaWorks</a></sub>
-</p>
+Built with ❤️ by [DukaWorks](https://github.com/dukaworks)
