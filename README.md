@@ -1,6 +1,6 @@
 # FRPC GUI
 
-![DukaWorks Logo](public/dukaworks-logo-up-with-words.png)
+![DukaWorks Logo](./public/dukaworks-logo-up-with-words.png)
 
 **Web-based GUI for managing FRPC configurations remotely via SSH**
 
