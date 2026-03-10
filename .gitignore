@@ -23,3 +23,8 @@
 hs_err_pid*
 replay_pid*
 node_modules
+
+# Build artifacts
+dist/
+dist-server/
+release/
