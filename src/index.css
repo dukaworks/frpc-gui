@@ -81,6 +81,23 @@
   }
 }
 
+@layer utilities {
+  .scrollbar-purple::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  .scrollbar-purple::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .scrollbar-purple::-webkit-scrollbar-thumb {
+    background: rgba(139, 92, 246, 0.3);
+    border-radius: 10px;
+  }
+  .scrollbar-purple::-webkit-scrollbar-thumb:hover {
+    background: rgba(139, 92, 246, 0.5);
+  }
+}
+
 :root {
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans", Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
   line-height: 1.5;

@@ -663,7 +663,7 @@ export default function Dashboard() {
              </Badge>
           </CardHeader>
           <CardContent className="flex-1 p-0 overflow-hidden relative group bg-black">
-             <div className="absolute inset-0 p-4 font-mono text-[11px] overflow-auto scrollbar-thin scrollbar-thumb-purple-500/30 scrollbar-track-transparent hover:scrollbar-thumb-purple-500/50 transition-colors">
+             <div className="absolute inset-0 p-4 font-mono text-[11px] overflow-auto scrollbar-purple">
                  {logsLoading && !logs ? (
                      <div className="flex items-center justify-center h-full text-slate-500">
                          <Loader2 className="h-5 w-5 animate-spin mr-2" />
