@@ -90,11 +90,11 @@
     background: transparent;
   }
   .scrollbar-purple::-webkit-scrollbar-thumb {
-    background: rgba(139, 92, 246, 0.3);
+    background: rgba(139, 92, 246, 0.5);
     border-radius: 10px;
   }
   .scrollbar-purple::-webkit-scrollbar-thumb:hover {
-    background: rgba(139, 92, 246, 0.5);
+    background: rgba(139, 92, 246, 0.8);
   }
 }
 
