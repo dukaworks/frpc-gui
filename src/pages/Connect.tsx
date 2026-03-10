@@ -12,8 +12,10 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { useTranslation } from 'react-i18next';
 
 export default function Connect() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const { setConnected, sessionId: storeSessionId, isConnected } = useFrpcStore();
   const { savedConnections, addConnection, updateConnection } = useUserStore();
@@ -169,18 +171,18 @@ export default function Connect() {
     <div className="flex items-center justify-center min-h-screen bg-gray-100 dark:bg-gray-900 p-4">
       <Card className="w-full max-w-md shadow-lg">
         <CardHeader>
-          <CardTitle className="text-xl">Connect to Remote Server</CardTitle>
+          <CardTitle className="text-xl">{t('connectToRemoteServer')}</CardTitle>
         </CardHeader>
         
         <form onSubmit={handleSubmit}>
             <CardContent className="space-y-5">
                 {/* Combined Server Name / Saved Selection */}
                 <div className="space-y-2 relative" ref={dropdownRef}>
-                    <Label>Server</Label>
+                    <Label>{t('serverLabel')}</Label>
                     <div className="relative">
                         <Input 
                             name="name" 
-                            placeholder={formData.host || "Input Server Name or Select"} 
+                            placeholder={formData.host || t('inputServerNameOrSelect')} 
                             value={formData.name}
                             onChange={handleChange}
                             className="pr-10"
@@ -205,10 +207,10 @@ export default function Connect() {
                                 onClick={() => handleSelectServer(null)}
                             >
                                 <Server className="h-4 w-4" />
-                                New Connection
+                                {t('newConnection')}
                             </div>
                             {savedConnections.length === 0 ? (
-                                <div className="p-4 text-center text-sm text-muted-foreground">No saved servers</div>
+                                <div className="p-4 text-center text-sm text-muted-foreground">{t('noSavedServers')}</div>
                             ) : (
                                 savedConnections.map(conn => (
                                     <div 
@@ -230,7 +232,7 @@ export default function Connect() {
 
                 <div className="grid grid-cols-12 gap-4">
                     <div className="col-span-8 space-y-2">
-                        <Label>Host IP</Label>
+                        <Label>{t('hostIp')}</Label>
                         <Input 
                             name="host" 
                             placeholder="192.168.1.100" 
@@ -240,7 +242,7 @@ export default function Connect() {
                         />
                     </div>
                     <div className="col-span-4 space-y-2">
-                        <Label>SSH Port</Label>
+                        <Label>{t('sshPort')}</Label>
                         <Input 
                             name="port" 
                             type="number" 
@@ -253,7 +255,7 @@ export default function Connect() {
                 </div>
 
                 <div className="space-y-2">
-                    <Label>Username</Label>
+                    <Label>{t('username')}</Label>
                     <Input 
                         name="username" 
                         placeholder="root" 
@@ -265,7 +267,7 @@ export default function Connect() {
 
                 <div className="space-y-2">
                     <div className="flex items-center justify-between">
-                        <Label>Authentication</Label>
+                        <Label>{t('authentication')}</Label>
                         <div className="flex bg-muted rounded-md p-1 gap-1">
                             <Tooltip>
                                 <TooltipTrigger asChild>
@@ -276,7 +278,7 @@ export default function Connect() {
                                         className="h-7 px-3 text-xs shadow-none"
                                         onClick={() => setAuthType('password')}
                                     >
-                                        <Lock className="h-3 w-3 mr-1.5" /> Password
+                                        <Lock className="h-3 w-3 mr-1.5" /> {t('password')}
                                     </Button>
                                 </TooltipTrigger>
                                 <TooltipContent>Authenticate with password</TooltipContent>
@@ -291,7 +293,7 @@ export default function Connect() {
                                         className="h-7 px-3 text-xs shadow-none"
                                         onClick={() => setAuthType('key')}
                                     >
-                                        <KeyRound className="h-3 w-3 mr-1.5" /> Key
+                                        <KeyRound className="h-3 w-3 mr-1.5" /> {t('key')}
                                     </Button>
                                 </TooltipTrigger>
                                 <TooltipContent>Authenticate with private key</TooltipContent>
@@ -339,7 +341,7 @@ export default function Connect() {
                         checked={formData.save}
                         onCheckedChange={(checked) => setFormData({...formData, save: checked as boolean})}
                     />
-                    <Label htmlFor="save" className="text-sm font-normal text-muted-foreground cursor-pointer">Save Connection</Label>
+                    <Label htmlFor="save" className="text-sm font-normal text-muted-foreground cursor-pointer">{t('saveConnection')}</Label>
                 </div>
 
                 {error && (
@@ -353,10 +355,10 @@ export default function Connect() {
                     {loading ? (
                       <>
                         <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Connecting...
+                        {t('connecting')}
                       </>
                     ) : (
-                      'OK'
+                      t('common.ok')
                     )}
                 </Button>
             </CardFooter>

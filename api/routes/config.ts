@@ -33,7 +33,8 @@ router.post('/connect', async (req, res) => {
       process: processInfo
     });
   } catch (error: any) {
-    res.status(500).json({ error: error.message });
+    console.error('Connect Route Error:', error);
+    res.status(500).json({ error: error instanceof Error ? error.message : String(error) });
   }
 });
 

@@ -5,6 +5,8 @@ import ConnectSimple from './pages/ConnectSimple';
 import Dashboard from './pages/Dashboard';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { Footer } from '@/components/Footer';
+import { useTheme } from '@/hooks/useTheme';
+import { useLanguage } from '@/hooks/useLanguage';
 
 class ErrorBoundary extends React.Component<
   { children: React.ReactNode },
@@ -66,6 +68,9 @@ class ErrorBoundary extends React.Component<
 }
 
 function App() {
+  useTheme();
+  useLanguage();
+
   return (
     <TooltipProvider>
       <ErrorBoundary>

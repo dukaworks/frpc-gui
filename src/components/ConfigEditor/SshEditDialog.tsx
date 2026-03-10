@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -24,6 +25,7 @@ interface SshEditDialogProps {
 }
 
 export function SshEditDialog({ open, onOpenChange, initialData, onSave }: SshEditDialogProps) {
+  const { t } = useTranslation();
   const [formData, setFormData] = useState<SSHConfig>({
     id: '',
     name: '',
@@ -58,12 +60,12 @@ export function SshEditDialog({ open, onOpenChange, initialData, onSave }: SshEd
   const handleSave = () => {
     const trimmedName = formData.name?.trim() || formData.host; // Fallback to host if name empty
     if (!trimmedName) {
-      setError('Connection Name or Host cannot be empty');
+      setError(t('ssh.errorNameHostEmpty'));
       return;
     }
     const trimmedHost = formData.host.trim();
     if (!trimmedHost) {
-        setError('Host Address cannot be empty');
+        setError(t('ssh.errorHostEmpty'));
         return;
     }
 
@@ -86,16 +88,16 @@ export function SshEditDialog({ open, onOpenChange, initialData, onSave }: SshEd
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
-          <DialogTitle>{initialData ? 'Edit SSH Connection' : 'Add SSH Connection'}</DialogTitle>
+          <DialogTitle>{initialData ? t('ssh.editTitle') : t('ssh.addTitle')}</DialogTitle>
           <DialogDescription>
-            Configure remote server SSH details. This will update your saved connections.
+            {t('ssh.editDesc')}
           </DialogDescription>
         </DialogHeader>
         
         <div className="grid gap-4 py-4">
           <div className="grid grid-cols-4 items-center gap-4">
             <Label htmlFor="name" className="text-right">
-              Name
+              {t('ssh.name')}
             </Label>
             <Input
               id="name"
@@ -108,7 +110,7 @@ export function SshEditDialog({ open, onOpenChange, initialData, onSave }: SshEd
 
           <div className="grid grid-cols-4 items-center gap-4">
             <Label htmlFor="host" className="text-right">
-              Host
+              {t('ssh.host')}
             </Label>
             <Input
               id="host"
@@ -121,7 +123,7 @@ export function SshEditDialog({ open, onOpenChange, initialData, onSave }: SshEd
 
           <div className="grid grid-cols-4 items-center gap-4">
             <Label htmlFor="port" className="text-right">
-              Port
+              {t('ssh.port')}
             </Label>
             <Input
               id="port"
@@ -135,7 +137,7 @@ export function SshEditDialog({ open, onOpenChange, initialData, onSave }: SshEd
 
           <div className="grid grid-cols-4 items-center gap-4">
             <Label htmlFor="username" className="text-right">
-              Username
+              {t('ssh.username')}
             </Label>
             <Input
               id="username"
@@ -161,7 +163,7 @@ export function SshEditDialog({ open, onOpenChange, initialData, onSave }: SshEd
           </div>
 
           <div className="grid grid-cols-4 items-start gap-4">
-             <Label className="text-right pt-2">SSH Auth</Label>
+             <Label className="text-right pt-2">{t('ssh.authMethod')}</Label>
              <div className="col-span-3 space-y-3">
                  <div className="flex bg-muted rounded-md p-1 gap-1 w-fit">
                     <Button 
@@ -171,7 +173,7 @@ export function SshEditDialog({ open, onOpenChange, initialData, onSave }: SshEd
                         className="h-7 px-3 text-xs shadow-none"
                         onClick={() => setAuthType('password')}
                     >
-                        <Lock className="h-3 w-3 mr-1.5" /> Password
+                        <Lock className="h-3 w-3 mr-1.5" /> {t('ssh.password')}
                     </Button>
                     <Button 
                         type="button"
@@ -180,7 +182,7 @@ export function SshEditDialog({ open, onOpenChange, initialData, onSave }: SshEd
                         className="h-7 px-3 text-xs shadow-none"
                         onClick={() => setAuthType('key')}
                     >
-                        <KeyRound className="h-3 w-3 mr-1.5" /> Key
+                        <KeyRound className="h-3 w-3 mr-1.5" /> {t('ssh.privateKey')}
                     </Button>
                  </div>
 
@@ -217,7 +219,7 @@ export function SshEditDialog({ open, onOpenChange, initialData, onSave }: SshEd
         {error && <div className="text-sm text-red-500 mb-2 text-right">{error}</div>}
 
         <DialogFooter>
-          <Button type="submit" onClick={handleSave}>Save Connection</Button>
+          <Button type="submit" onClick={handleSave}>{t('ssh.saveConnection')}</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

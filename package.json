@@ -1,22 +1,52 @@
 {
   "name": "frpc-gui",
   "private": false,
-  "version": "0.1.6",
-  "description": "Web-based GUI for managing FRPC configurations remotely via SSH",
+  "version": "0.1.7",
+  "description": "Web-based GUI for managing Frpc configurations remotely via SSH",
   "license": "MIT",
+  "author": "DukaWorks",
   "repository": {
     "type": "git",
     "url": "https://github.com/dukaworks/frpc-gui.git"
   },
   "type": "module",
+  "main": "electron/main.js",
   "scripts": {
     "client:dev": "vite",
-    "build": "tsc -b && vite build",
+    "build": "tsc -b && tsc -p tsconfig.server.json && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
     "check": "tsc --noEmit",
     "server:dev": "nodemon",
-    "dev": "concurrently \"npm run client:dev\" \"npm run server:dev\""
+    "dev": "concurrently \"npm run client:dev\" \"npm run server:dev\"",
+    "electron:dev": "npm run build && electron .",
+    "electron:build": "npm run build && electron-builder"
+  },
+  "build": {
+    "appId": "com.dukaworks.frpc-gui",
+    "productName": "Frpc-GUI",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "dist/**/*",
+      "dist-server/**/*",
+      "electron/**/*",
+      "package.json",
+      "node_modules/**/*"
+    ],
+    "win": {
+      "target": "nsis",
+      "icon": "dist/favicon.png"
+    },
+    "mac": {
+      "target": "dmg",
+      "icon": "dist/favicon.png"
+    },
+    "linux": {
+      "target": "AppImage",
+      "icon": "dist/favicon.png"
+    }
   },
   "dependencies": {
     "@iarna/toml": "^2.2.5",
@@ -35,9 +65,12 @@
     "cors": "^2.8.5",
     "dotenv": "^17.2.1",
     "express": "^4.21.2",
+    "i18next": "^25.8.17",
+    "i18next-browser-languagedetector": "^8.2.1",
     "lucide-react": "^0.511.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
+    "react-i18next": "^16.5.6",
     "react-router-dom": "^7.3.0",
     "ssh2": "^1.17.0",
     "tailwind-merge": "^3.0.2",
@@ -58,6 +91,8 @@
     "autoprefixer": "^10.4.21",
     "babel-plugin-react-dev-locator": "^1.0.0",
     "concurrently": "^9.2.0",
+    "electron": "^40.8.0",
+    "electron-builder": "^26.8.1",
     "eslint": "^9.25.0",
     "eslint-plugin-react-hooks": "^5.2.0",
     "eslint-plugin-react-refresh": "^0.4.19",

@@ -33,9 +33,17 @@ export class ApiClient {
       headers,
     });
 
-    const data = await res.json();
+    const text = await res.text();
+    let data;
+    try {
+      data = text ? JSON.parse(text) : {};
+    } catch (e) {
+      console.error('Failed to parse response:', text);
+      throw new Error('Invalid server response');
+    }
+
     if (!res.ok) {
-      throw new Error(data.error || 'Request failed');
+      throw new Error(data.error || `Request failed: ${res.status} ${res.statusText}`);
     }
     return data;
   }
@@ -47,8 +55,16 @@ export class ApiClient {
         body: JSON.stringify(credentials),
     });
     
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.error);
+    const text = await res.text();
+    let data;
+    try {
+      data = text ? JSON.parse(text) : {};
+    } catch (e) {
+      console.error('Failed to parse connect response:', text);
+      throw new Error('Invalid server response');
+    }
+
+    if (!res.ok) throw new Error(data.error || `Connection failed: ${res.status}`);
 
     if (data.sessionId) {
       this.setSessionId(data.sessionId);

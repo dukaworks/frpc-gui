@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -25,6 +26,7 @@ function toNumberOrUndefined(v: unknown) {
 }
 
 export function ServerEditDialog({ open, onOpenChange, initialData, onSave }: ServerEditDialogProps) {
+  const { t } = useTranslation();
   const [formData, setFormData] = useState<ServerProfile>({
     id: '',
     name: '',
@@ -53,12 +55,12 @@ export function ServerEditDialog({ open, onOpenChange, initialData, onSave }: Se
   const handleSave = () => {
     const trimmedName = formData.name.trim();
     if (!trimmedName) {
-      setError('Profile Name cannot be empty');
+      setError(t('serverProfile.errorNameEmpty'));
       return;
     }
     const trimmedAddr = formData.serverAddr.trim();
     if (!trimmedAddr) {
-        setError('Server Address cannot be empty');
+        setError(t('serverProfile.errorAddrEmpty'));
         return;
     }
 
@@ -74,16 +76,16 @@ export function ServerEditDialog({ open, onOpenChange, initialData, onSave }: Se
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
-          <DialogTitle>{initialData ? 'Edit Server Profile' : 'Add Server Profile'}</DialogTitle>
+          <DialogTitle>{initialData ? t('serverProfile.editTitle') : t('serverProfile.addTitle')}</DialogTitle>
           <DialogDescription>
-            Configure server connection details. Click save when done.
+            {t('serverProfile.editDesc')}
           </DialogDescription>
         </DialogHeader>
         
         <div className="grid gap-4 py-4">
           <div className="grid grid-cols-4 items-center gap-4">
             <Label htmlFor="name" className="text-right">
-              Profile Name
+              {t('serverProfile.profileName')}
             </Label>
             <Input
               id="name"
@@ -96,7 +98,7 @@ export function ServerEditDialog({ open, onOpenChange, initialData, onSave }: Se
 
           <div className="grid grid-cols-4 items-center gap-4">
             <Label htmlFor="serverAddr" className="text-right">
-              Server Addr
+              {t('serverProfile.addr')}
             </Label>
             <Input
               id="serverAddr"
@@ -109,7 +111,7 @@ export function ServerEditDialog({ open, onOpenChange, initialData, onSave }: Se
 
           <div className="grid grid-cols-4 items-center gap-4">
             <Label htmlFor="serverPort" className="text-right">
-              Server Port
+              {t('serverProfile.port')}
             </Label>
             <Input
               id="serverPort"
@@ -123,7 +125,7 @@ export function ServerEditDialog({ open, onOpenChange, initialData, onSave }: Se
 
           <div className="grid grid-cols-4 items-center gap-4">
             <Label htmlFor="token" className="text-right">
-              Token
+              {t('serverProfile.token')}
             </Label>
             <Input
               id="token"
@@ -139,7 +141,7 @@ export function ServerEditDialog({ open, onOpenChange, initialData, onSave }: Se
         {error && <div className="text-sm text-red-500 mb-2 text-right">{error}</div>}
 
         <DialogFooter>
-          <Button type="submit" onClick={handleSave}>Save Profile</Button>
+          <Button type="submit" onClick={handleSave}>{t('serverProfile.saveProfile')}</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

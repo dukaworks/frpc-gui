@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -29,6 +30,7 @@ function toNumberOrUndefined(v: unknown) {
 }
 
 export function ProxyEditDialog({ open, onOpenChange, initialData, onSave, existingNames }: ProxyEditDialogProps) {
+  const { t } = useTranslation();
   const [formData, setFormData] = useState<ProxyConfig>({
     name: '',
     type: 'tcp',
@@ -65,13 +67,13 @@ export function ProxyEditDialog({ open, onOpenChange, initialData, onSave, exist
   const handleSave = () => {
     const trimmedName = formData.name.trim();
     if (!trimmedName) {
-      setError('名称不能为空');
+      setError(t('proxy.errorNameEmpty'));
       return;
     }
     // If renaming (or creating new), check for duplicates
     // Note: initialData.name is the original name.
     if (trimmedName !== initialData?.name && existingNames.has(trimmedName)) {
-      setError('名称已存在，请更换');
+      setError(t('proxy.errorNameExists'));
       return;
     }
 
@@ -91,16 +93,16 @@ export function ProxyEditDialog({ open, onOpenChange, initialData, onSave, exist
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
-          <DialogTitle>{initialData ? '编辑代理' : '新增代理'}</DialogTitle>
+          <DialogTitle>{initialData ? t('proxy.editTitle') : t('proxy.addTitle')}</DialogTitle>
           <DialogDescription>
-            配置代理规则。修改完成后点击保存。
+            {t('proxy.editDesc')}
           </DialogDescription>
         </DialogHeader>
         
         <div className="grid gap-4 py-4">
           <div className="grid grid-cols-4 items-center gap-4">
             <Label htmlFor="name" className="text-right">
-              名称
+              {t('proxy.name')}
             </Label>
             <Input
               id="name"
@@ -112,7 +114,7 @@ export function ProxyEditDialog({ open, onOpenChange, initialData, onSave, exist
           
           <div className="grid grid-cols-4 items-center gap-4">
             <Label htmlFor="type" className="text-right">
-              类型
+              {t('proxy.type')}
             </Label>
             <Select value={type} onValueChange={(v) => updateField({ type: v as ProxyType })}>
               <SelectTrigger className="col-span-3">
@@ -131,7 +133,7 @@ export function ProxyEditDialog({ open, onOpenChange, initialData, onSave, exist
 
           <div className="grid grid-cols-4 items-center gap-4">
             <Label htmlFor="localIP" className="text-right">
-              本地 IP
+              {t('proxy.localIP')}
             </Label>
             <Input
               id="localIP"
@@ -144,7 +146,7 @@ export function ProxyEditDialog({ open, onOpenChange, initialData, onSave, exist
 
           <div className="grid grid-cols-4 items-center gap-4">
             <Label htmlFor="localPort" className="text-right">
-              本地端口
+              {t('proxy.localPort')}
             </Label>
             <Input
               id="localPort"
@@ -159,7 +161,7 @@ export function ProxyEditDialog({ open, onOpenChange, initialData, onSave, exist
           {showRemotePort && (
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="remotePort" className="text-right">
-                远端端口
+                {t('proxy.remotePort')}
               </Label>
               <Input
                 id="remotePort"
@@ -176,7 +178,7 @@ export function ProxyEditDialog({ open, onOpenChange, initialData, onSave, exist
             <>
               <div className="grid grid-cols-4 items-center gap-4">
                 <Label htmlFor="customDomains" className="text-right">
-                  自定义域名
+                  {t('proxy.customDomains')}
                 </Label>
                 <Input
                   id="customDomains"
@@ -195,7 +197,7 @@ export function ProxyEditDialog({ open, onOpenChange, initialData, onSave, exist
               </div>
               <div className="grid grid-cols-4 items-center gap-4">
                 <Label htmlFor="subdomain" className="text-right">
-                  子域名
+                  {t('proxy.subdomain')}
                 </Label>
                 <Input
                   id="subdomain"
@@ -212,7 +214,7 @@ export function ProxyEditDialog({ open, onOpenChange, initialData, onSave, exist
         {error && <div className="text-sm text-red-500 mb-2 text-right">{error}</div>}
 
         <DialogFooter>
-          <Button type="submit" onClick={handleSave}>保存更改</Button>
+          <Button type="submit" onClick={handleSave}>{t('common.save')}</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

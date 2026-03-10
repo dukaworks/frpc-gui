@@ -1,29 +1,43 @@
-import { useState, useEffect } from 'react';
-
-type Theme = 'light' | 'dark';
+import { useEffect } from 'react';
+import { useSettingsStore } from '@/store/settingsStore';
 
 export function useTheme() {
-  const [theme, setTheme] = useState<Theme>(() => {
-    const savedTheme = localStorage.getItem('theme') as Theme;
-    if (savedTheme) {
-      return savedTheme;
-    }
-    return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-  });
+  const { theme, setTheme } = useSettingsStore();
 
   useEffect(() => {
-    document.documentElement.classList.remove('light', 'dark');
-    document.documentElement.classList.add(theme);
-    localStorage.setItem('theme', theme);
+    const root = window.document.documentElement;
+    root.classList.remove('light', 'dark');
+
+    if (theme === 'system') {
+      const systemTheme = window.matchMedia('(prefers-color-scheme: dark)').matches
+        ? 'dark'
+        : 'light';
+      root.classList.add(systemTheme);
+    } else {
+      root.classList.add(theme);
+    }
   }, [theme]);
 
-  const toggleTheme = () => {
-    setTheme(prevTheme => prevTheme === 'light' ? 'dark' : 'light');
-  };
+  // Listen for system theme changes if mode is system
+  useEffect(() => {
+    if (theme !== 'system') return;
 
-  return {
-    theme,
-    toggleTheme,
-    isDark: theme === 'dark'
+    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+    const handleChange = () => {
+      const root = window.document.documentElement;
+      root.classList.remove('light', 'dark');
+      root.classList.add(mediaQuery.matches ? 'dark' : 'light');
+    };
+
+    mediaQuery.addEventListener('change', handleChange);
+    return () => mediaQuery.removeEventListener('change', handleChange);
+  }, [theme]);
+
+  return { 
+    theme, 
+    setTheme,
+    // Compatibility with old interface if needed, but 'system' complicates boolean isDark
+    isDark: theme === 'dark' || (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches),
+    toggleTheme: () => setTheme(theme === 'dark' ? 'light' : 'dark') // Simple toggle for legacy support
   };
-} 
+}

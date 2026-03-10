@@ -1,16 +1,16 @@
-# FRPC GUI
+# Frpc-GUI
 
 <p align="center">
   <img src="project_docs/images/dukaworks-logo-up-with-words.png" alt="DukaWorks Logo" width="200" />
 </p>
 
 <p align="center">
-  <strong>Web-based GUI for managing FRPC configurations remotely via SSH</strong>
+  <strong>Web-based GUI for managing Frpc configurations remotely via SSH</strong>
 </p>
 
 <p align="center">
   <a href="./LICENSE"><img src="https://img.shields.io/badge/license-MIT-8A2BE2.svg" alt="License"></a>
-  <img src="https://img.shields.io/badge/version-0.1.5-8A2BE2.svg" alt="Version">
+  <img src="https://img.shields.io/badge/version-0.1.7-8A2BE2.svg" alt="Version">
   <a href="https://github.com/dukaworks/frpc-gui/actions/workflows/docker-publish.yml"><img src="https://github.com/dukaworks/frpc-gui/actions/workflows/docker-publish.yml/badge.svg" alt="Docker Build & Publish"></a>
   <br>
   <a href="https://x.com/dukatalk"><img src="https://img.shields.io/badge/X-Follow%20@dukatalk-black.svg?logo=x" alt="Follow on X"></a>
@@ -24,17 +24,28 @@
 
 ---
 
-**FRPC GUI** is a modern, user-friendly web interface developed by **DukaWorks** for managing your FRPC (Fast Reverse Proxy Client) configuration files. Instead of editing TOML/INI files manually via SSH, you can use this visual dashboard to add, edit, and delete proxies, manage multiple servers, and view real-time logs with ease.
+**Frpc-GUI** is a modern, user-friendly web interface developed by **DukaWorks** for managing your Frpc (Fast Reverse Proxy Client) configuration files. Instead of editing TOML/INI files manually via SSH, you can use this visual dashboard to add, edit, and delete proxies, manage multiple servers, and view real-time logs with ease.
 
 ## ✨ Features
 
-- 🚀 **Remote Management**: Connect to any server running FRPC via SSH.
-- 🎨 **Visual Configuration**: User-friendly form-based editor for FRPC proxies.
+- 🚀 **Remote Management**: Connect to any server running Frpc via SSH.
+- 🎨 **Visual Configuration**: User-friendly form-based editor for Frpc proxies.
 - 🔄 **Full CRUD Support**: Add, Edit, Delete (Single/Batch) proxies easily.
-- 🖥️ **Multi-Server Support**: Save and switch between multiple FRPC server profiles.
-- 📊 **Real-time Logs**: View live logs from the running FRPC service (Docker, Systemd, or Process).
+- 🖥️ **Multi-Server Support**: Save and switch between multiple Frpc server profiles.
+- 📊 **Real-time Logs**: View live logs from the running Frpc service (Docker, Systemd, or Process).
 - 🛡️ **Safety First**: Built-in configuration backup and "Restart Service" safety checks.
 - 📄 **TOML Support**: Native support for the modern TOML configuration format.
+
+## 💡 Usage Scenarios & Recommendations
+
+*   **Desktop Environment (Released Versions)**
+    *   Recommended for use on **Windows PC, macOS, Laptops**, or **Linux Desktop**. Manage remote frpc services running on servers, NAS, or routers via SSH connection.
+
+*   **Production Environment Management (Remote Management)**
+    *   For frpc running in production environments like **PVE, OpenWrt (e.g., iStoreOS), or fnOS**, it is recommended to install Frpc-GUI on a separate management device (like your laptop) and manage it remotely via SSH. This "separation of control plane and data plane" approach is more robust and prevents management tools from interfering with the production environment.
+
+*   **Future Roadmap**
+    *   We plan to release an **All-In-One Docker image (Frpc + GUI)** for out-of-the-box usage. At that time, Frpc-GUI can be deployed directly on the target device as the default web management interface, integrating seamlessly with frpc.
 
 ## 📦 Quick Start
 
@@ -76,6 +87,17 @@ docker run -d \
     ```bash
     npm run dev
     ```
+
+### Desktop App (Electron)
+
+You can build a standalone desktop application for your OS (Windows, macOS, or Linux).
+
+1.  Build the application:
+    ```bash
+    npm run electron:build
+    ```
+
+2.  The installer/executable will be generated in the `release` directory.
 
 ## ⚙️ Configuration Reference
 

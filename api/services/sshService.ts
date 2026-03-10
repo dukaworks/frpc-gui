@@ -38,7 +38,7 @@ class SshService {
         resolve();
       }).on('error', (err) => {
         this.isConnected = false;
-        console.error('SSH Connection Error:', err);
+        console.error('SSH Connection Error Event:', err.message);
         reject(err);
       }).on('end', () => {
         this.isConnected = false;

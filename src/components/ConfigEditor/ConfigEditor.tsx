@@ -8,6 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Loader2, Save, Code, AlertTriangle, Server, Eye, EyeOff, Lock, Unlock } from 'lucide-react';
 import { useFrpcConfig } from '@/hooks/useFrpcConfig';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { useTranslation } from 'react-i18next';
 
 interface ConfigEditorProps {
   initialContent: string;
@@ -24,6 +25,7 @@ function toNumberOrUndefined(v: unknown) {
 }
 
 export function ConfigEditor({ initialContent, path, onSave, onConfigSaved, defaultTab = 'server', hideTabs = false }: ConfigEditorProps) {
+  const { t } = useTranslation();
   const {
     content: hookContent,
     setContent: setHookContent,
@@ -84,10 +86,10 @@ export function ConfigEditor({ initialContent, path, onSave, onConfigSaved, defa
       
       if (restart && onSave) {
          // If restart is requested, we call onSave which triggers restart in Dashboard
-         setSuccess('已保存并请求重启...');
+         setSuccess(t('common.savedRestarting'));
          setTimeout(() => onSave(), 300);
       } else {
-         setSuccess('已保存');
+         setSuccess(t('common.saved'));
       }
       
       if (activeTab !== 'code') {
@@ -98,7 +100,7 @@ export function ConfigEditor({ initialContent, path, onSave, onConfigSaved, defa
 
       setTimeout(() => setSuccess(''), 2000);
     } catch (err: any) {
-      setError(err.message || '保存失败');
+      setError(err.message || t('common.saveFailed'));
     } finally {
       setSaving(false);
     }
@@ -112,8 +114,8 @@ export function ConfigEditor({ initialContent, path, onSave, onConfigSaved, defa
             <div className="flex flex-col">
                 <div className="flex items-center gap-2">
                     <TabsList className="grid w-full max-w-[200px] grid-cols-2">
-                        <TabsTrigger value="server">Server</TabsTrigger>
-                        <TabsTrigger value="code">Code</TabsTrigger>
+                        <TabsTrigger value="server">{t('config.serverTab')}</TabsTrigger>
+                        <TabsTrigger value="code">{t('config.codeTab')}</TabsTrigger>
                     </TabsList>
                     <Tooltip>
                         <TooltipTrigger asChild>
@@ -127,7 +129,7 @@ export function ConfigEditor({ initialContent, path, onSave, onConfigSaved, defa
                             </Button>
                         </TooltipTrigger>
                         <TooltipContent>
-                            {isLocked ? 'Click to Unlock Editing' : 'Unlocked - Careful!'}
+                            {isLocked ? t('config.unlock') : t('config.unlocked')}
                         </TooltipContent>
                     </Tooltip>
                 </div>
@@ -140,20 +142,20 @@ export function ConfigEditor({ initialContent, path, onSave, onConfigSaved, defa
                 <TooltipTrigger asChild>
                   <Button onClick={() => handleSave(false)} disabled={saving || isLocked} variant="outline" className="border-primary text-primary hover:bg-primary hover:text-primary-foreground">
                      {saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
-                     Save
+                     {t('common.save')}
                   </Button>
                 </TooltipTrigger>
-                <TooltipContent>Save configuration only</TooltipContent>
+                <TooltipContent>{t('config.saveOnly')}</TooltipContent>
               </Tooltip>
 
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button onClick={() => handleSave(true)} disabled={saving || isLocked} className="min-w-[120px]" variant="outline">
                      {saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
-                     {saving ? 'Saving...' : 'Save & Restart'}
+                     {saving ? t('common.loading') : t('config.saveRestart')}
                   </Button>
                 </TooltipTrigger>
-                <TooltipContent>Save configuration and restart service</TooltipContent>
+                <TooltipContent>{t('config.saveRestart')}</TooltipContent>
               </Tooltip>
           </div>
         </div>
@@ -163,8 +165,8 @@ export function ConfigEditor({ initialContent, path, onSave, onConfigSaved, defa
           <div className="flex justify-between items-center mb-4 bg-card p-2 rounded-lg border shadow-sm">
                <div className="flex items-center gap-2">
                     <TabsList className="grid w-[200px] grid-cols-2 h-8">
-                        <TabsTrigger value="server" className="text-xs">Server</TabsTrigger>
-                        <TabsTrigger value="code" className="text-xs">Code</TabsTrigger>
+                        <TabsTrigger value="server" className="text-xs">{t('config.serverTab')}</TabsTrigger>
+                        <TabsTrigger value="code" className="text-xs">{t('config.codeTab')}</TabsTrigger>
                     </TabsList>
                     
                     <div className="w-px h-6 bg-border mx-1" />
@@ -181,7 +183,7 @@ export function ConfigEditor({ initialContent, path, onSave, onConfigSaved, defa
                             </Button>
                         </TooltipTrigger>
                         <TooltipContent>
-                            {isLocked ? 'Click to Unlock Editing' : 'Unlocked - Careful!'}
+                            {isLocked ? t('config.unlock') : t('config.unlocked')}
                         </TooltipContent>
                     </Tooltip>
                </div>
@@ -191,20 +193,20 @@ export function ConfigEditor({ initialContent, path, onSave, onConfigSaved, defa
                      <TooltipTrigger asChild>
                        <Button onClick={() => handleSave(false)} disabled={saving || isLocked} size="sm" variant="outline" className="border-primary text-primary hover:bg-primary hover:text-primary-foreground h-8">
                         {saving ? <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" /> : <Save className="mr-2 h-3.5 w-3.5" />}
-                        Save
+                        {t('common.save')}
                        </Button>
                      </TooltipTrigger>
-                     <TooltipContent>Save configuration only</TooltipContent>
+                     <TooltipContent>{t('config.saveOnly')}</TooltipContent>
                    </Tooltip>
 
                    <Tooltip>
                      <TooltipTrigger asChild>
                        <Button onClick={() => handleSave(true)} disabled={saving || isLocked} size="sm" className="min-w-[120px] h-8" variant="outline">
                         {saving ? <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" /> : <Save className="mr-2 h-3.5 w-3.5" />}
-                        {saving ? 'Saving…' : 'Save & Restart'}
+                        {saving ? t('common.loading') : t('config.saveRestart')}
                       </Button>
                      </TooltipTrigger>
-                     <TooltipContent>Save configuration and restart service</TooltipContent>
+                     <TooltipContent>{t('config.saveRestart')}</TooltipContent>
                    </Tooltip>
                </div>
           </div>
@@ -213,9 +215,9 @@ export function ConfigEditor({ initialContent, path, onSave, onConfigSaved, defa
       {parseError && activeTab !== 'code' && (
          <div className="flex items-center p-3 text-sm text-amber-800 bg-amber-50 border border-amber-200 rounded-md">
             <AlertTriangle className="h-4 w-4 mr-2" />
-            <span>配置解析遇到问题，部分内容可能无法显示。建议切换到源码模式查看。错误: {parseError}</span>
+            <span>{t('config.parseError', { error: parseError })}</span>
             <Button variant="link" size="sm" onClick={() => handleTabChange('code')} className="ml-auto text-amber-900">
-                切换到源码模式
+                {t('config.switchToCode')}
             </Button>
          </div>
       )}
@@ -229,28 +231,28 @@ export function ConfigEditor({ initialContent, path, onSave, onConfigSaved, defa
                 <TabsList>
                     <TabsTrigger value="server" className="flex items-center gap-2">
                         <Server className="h-4 w-4" />
-                        服务器配置
+                        {t('config.serverTab')}
                     </TabsTrigger>
                     <TabsTrigger value="code" className="flex items-center gap-2">
                         <Code className="h-4 w-4" />
-                        源码模式
+                        {t('config.codeTab')}
                     </TabsTrigger>
                 </TabsList>
             )}
         </div>
 
         <TabsContent value="server" className="mt-0 relative">
-            {isLocked && <div className="absolute inset-0 bg-white/50 z-10 cursor-not-allowed" />}
+            {isLocked && <div className="absolute inset-0 bg-background/80 backdrop-blur-[1px] z-10 cursor-not-allowed rounded-lg border border-transparent" />}
             <div className="grid grid-cols-12 gap-4">
                 <div className="hidden md:block md:col-span-3"></div>
                 <div className="col-span-12 md:col-span-6">
                     <Card>
                         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                            <CardTitle>Server Connection Settings</CardTitle>
+                            <CardTitle>{t('config.serverSettings')}</CardTitle>
                         </CardHeader>
                         <CardContent className="space-y-4">
                             <div className="space-y-2">
-                                <Label>Server Addr</Label>
+                                <Label>{t('serverProfile.addr')}</Label>
                                 <Input 
                                     value={commonConfig.serverAddr} 
                                     onChange={(e) => updateCommon('serverAddr', e.target.value)} 
@@ -259,7 +261,7 @@ export function ConfigEditor({ initialContent, path, onSave, onConfigSaved, defa
                                 />
                             </div>
                             <div className="space-y-2">
-                                <Label>Server Port</Label>
+                                <Label>{t('serverProfile.port')}</Label>
                                 <Input
                                     type="number"
                                     value={commonConfig.serverPort}
@@ -269,13 +271,13 @@ export function ConfigEditor({ initialContent, path, onSave, onConfigSaved, defa
                                 />
                             </div>
                             <div className="space-y-2">
-                        <Label>Token</Label>
+                        <Label>{t('serverProfile.token')}</Label>
                         <div className="relative">
                             <Input
                                 type={showToken ? "text" : "password"}
                                 value={(commonConfig as any).token || ''}
                                 onChange={(e) => updateCommon('token' as any, e.target.value)}
-                                placeholder="Optional auth token"
+                                placeholder={t('config.tokenPlaceholder')}
                                 className="pr-10"
                                 disabled={isLocked}
                             />

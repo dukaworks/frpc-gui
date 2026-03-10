@@ -1,7 +1,9 @@
 import { Github, Send, Mail } from "lucide-react";
 import logo from "../assets/dukaworks-logo-left-with-words.png";
+import { useTranslation } from 'react-i18next';
 
 export function Footer() {
+  const { t } = useTranslation();
   const currentYear = new Date().getFullYear();
 
   return (
@@ -16,7 +18,7 @@ export function Footer() {
             />
           </a>
           <p className="text-sm text-muted-foreground">
-            &copy; {currentYear} DukaWorks. All rights reserved.
+            {t('footer.copyright', { year: currentYear })}
           </p>
         </div>
         
@@ -27,7 +29,7 @@ export function Footer() {
             rel="noreferrer"
             className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors mr-2"
           >
-            Blog
+            {t('footer.blog')}
           </a>
           <a
             href="https://github.com/dukaworks"

@@ -6,7 +6,7 @@ import { ApiClient } from '@/lib/api';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, Terminal, FileText, Activity, Server, Box, Eye, Edit3, Save, Play, ArrowLeft, LayoutGrid, Settings, Plus, RotateCw, Power, RefreshCw, CheckSquare, Square, Trash2, Globe, Lock } from 'lucide-react';
+import { Loader2, Terminal, FileText, Activity, Server, Box, Eye, Edit3, Save, Play, ArrowLeft, LayoutGrid, Settings, Plus, RotateCw, Power, RefreshCw, CheckSquare, Square, Trash2, Globe, Lock, BarChart, Download, Upload } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ConfigEditor } from '@/components/ConfigEditor';
 import { ProxyListOverview } from '@/components/ConfigEditor/ProxyListOverview';
@@ -19,6 +19,9 @@ import { ServerListOverview } from '@/components/ConfigEditor/ServerListOverview
 import { ServerEditDialog } from '@/components/ConfigEditor/ServerEditDialog';
 import { SshEditDialog } from '@/components/ConfigEditor/SshEditDialog';
 import { ProxyConfig, ServerProfile, SSHConfig } from '@/shared/types';
+import { useTranslation } from 'react-i18next';
+import { useSettingsStore } from '@/store/settingsStore';
+import { SettingsDialog } from '@/components/SettingsDialog';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -31,6 +34,7 @@ import {
 } from "@/components/ui/alert-dialog";
 
 function UptimeDisplay({ startTimestamp }: { startTimestamp: number }) {
+  const { t } = useTranslation();
   const [uptime, setUptime] = useState('');
 
   useEffect(() => {
@@ -39,34 +43,43 @@ function UptimeDisplay({ startTimestamp }: { startTimestamp: number }) {
         const diff = Math.floor((now - startTimestamp) / 1000);
         
         if (diff < 0) {
-            setUptime('Starting...');
+            setUptime(t('dashboard.starting'));
             return;
         }
 
+        const upPrefix = t('dashboard.up');
+        const secondsUnit = t('dashboard.seconds');
+        const minutesUnit = t('dashboard.minutes');
+        const hoursUnit = t('dashboard.hours');
+        const daysUnit = t('dashboard.days');
+
         if (diff < 60) {
-            setUptime(`Up ${diff} seconds`);
+            setUptime(`${upPrefix} ${diff} ${secondsUnit}`);
         } else if (diff < 3600) {
-            setUptime(`Up ${Math.floor(diff / 60)} minutes`);
+            setUptime(`${upPrefix} ${Math.floor(diff / 60)} ${minutesUnit}`);
         } else if (diff < 86400) {
             const hrs = Math.floor(diff / 3600);
             const mins = Math.floor((diff % 3600) / 60);
-            setUptime(`Up ${hrs} hours, ${mins} minutes`);
+            setUptime(`${upPrefix} ${hrs} ${hoursUnit}, ${mins} ${minutesUnit}`);
         } else {
             const days = Math.floor(diff / 86400);
             const hrs = Math.floor((diff % 86400) / 3600);
-            setUptime(`Up ${days} days, ${hrs} hours`);
+            setUptime(`${upPrefix} ${days} ${daysUnit}, ${hrs} ${hoursUnit}`);
         }
     };
 
     update();
     const interval = setInterval(update, 1000);
     return () => clearInterval(interval);
-  }, [startTimestamp]);
+  }, [startTimestamp, t]);
 
   return <span className="truncate">{uptime}</span>;
 }
 
 export default function Dashboard() {
+  const { t } = useTranslation();
+  const { frpsDashboardUrl } = useSettingsStore();
+  const [settingsOpen, setSettingsOpen] = useState(false);
   const navigate = useNavigate();
   const { isConnected, processInfo, disconnect, setProcessInfo, restartRequired, setRestartRequired } = useFrpcStore();
   const { savedConnections } = useUserStore();
@@ -104,7 +117,7 @@ export default function Dashboard() {
       const rawLogs = res.logs || '';
       // Regex to remove ANSI color codes and other escape sequences
       const cleanLogs = rawLogs.replace(/[\u001b\u009b][[()#;?]*(?:[0-9]{1,4}(?:;[0-9]{0,4})*)?[0-9A-ORZcf-nqry=><]/g, '');
-      setLogs(cleanLogs || 'No logs available');
+      setLogs(cleanLogs || t('dashboard.noLogsAvailable'));
     } catch (e: any) {
       console.error("Failed to fetch logs", e);
       if (e.message === 'Not connected' || e.message?.includes('Not connected')) {
@@ -139,6 +152,7 @@ export default function Dashboard() {
     addProxy: hookAddProxy, 
     updateProxy: hookUpdateProxy, 
     deleteProxy: hookDeleteProxy,
+    importProxies: hookImportProxies,
     generateToml 
   } = useFrpcConfig(configContent);
 
@@ -385,6 +399,76 @@ export default function Dashboard() {
     setEditDialogOpen(true);
   };
 
+  const handleExportProxies = async () => {
+    try {
+      const dataStr = JSON.stringify(proxies, null, 2);
+      const filename = `proxies_${new Date().toISOString().slice(0, 10)}.json`;
+
+      // Try File System Access API (Show Save File Picker)
+      // This allows the user to choose where to save the file
+      if ('showSaveFilePicker' in window) {
+        try {
+          const handle = await (window as any).showSaveFilePicker({
+            suggestedName: filename,
+            types: [{
+              description: 'JSON Files',
+              accept: { 'application/json': ['.json'] },
+            }],
+          });
+          const writable = await handle.createWritable();
+          await writable.write(dataStr);
+          await writable.close();
+          showFeedback('success', t('dashboard.exportSuccess'));
+          return;
+        } catch (err: any) {
+          // If user cancelled, just return
+          if (err.name === 'AbortError') return;
+          // If other error, fall back to legacy download
+          console.warn('File picker failed, falling back to download', err);
+        }
+      }
+
+      // Fallback: Legacy download method
+      const blob = new Blob([dataStr], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      showFeedback('success', t('dashboard.exportSuccess'));
+    } catch (e) {
+      showFeedback('error', t('dashboard.exportError'));
+    }
+  };
+
+  const handleImportProxies = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      try {
+        const json = JSON.parse(event.target?.result as string);
+        if (Array.isArray(json)) {
+            const count = hookImportProxies(json);
+            showFeedback('success', t('dashboard.importedSuccess', { count }));
+            triggerSave();
+            setRestartRequired(true);
+        } else {
+            showFeedback('error', t('dashboard.importError'));
+        }
+      } catch (err) {
+        showFeedback('error', t('dashboard.importError'));
+      }
+      // Reset input
+      e.target.value = '';
+    };
+    reader.readAsText(file);
+  };
+
   const handleSaveProxy = async (data: ProxyConfig) => {
     if (editingProxy) {
       // Update
@@ -444,7 +528,7 @@ export default function Dashboard() {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        <span className="ml-2 text-muted-foreground">Redirecting...</span>
+        <span className="ml-2 text-muted-foreground">{t('common.loading')}</span>
       </div>
     );
   }
@@ -464,7 +548,7 @@ export default function Dashboard() {
                  </TooltipTrigger>
                  <TooltipContent>Back to Connect</TooltipContent>
                </Tooltip>
-               <h1 className="text-2xl font-bold text-purple-600 dark:text-purple-400">FRPC Manager Dashboard</h1>
+               <h1 className="text-2xl font-bold text-purple-600 dark:text-purple-400">Frpc Manager Dashboard</h1>
             </div>
             <div className="flex gap-2">
               <Tooltip>
@@ -558,17 +642,39 @@ export default function Dashboard() {
       <header className="sticky top-0 z-10 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="container flex h-16 items-center justify-between">
           <div className="flex items-center gap-2">
-            <h1 className="text-xl font-bold text-purple-600 dark:text-purple-400">FRPC Manager Dashboard</h1>
+            <h1 className="text-xl font-bold text-purple-600 dark:text-purple-400">{t('dashboard.title')}</h1>
           </div>
           
-          <Button 
-            size="sm" 
-            onClick={handleLogout}
-            className="text-primary border border-primary hover:bg-primary hover:text-primary-foreground bg-transparent"
-          >
-            <Power className="mr-2 h-4 w-4" />
-            Logout
-          </Button>
+          <div className="flex items-center gap-2">
+            {frpsDashboardUrl && (
+               <Button
+                 variant="ghost"
+                 size="sm"
+                 onClick={() => window.open(frpsDashboardUrl, '_blank')}
+                 className="text-muted-foreground hover:bg-primary hover:text-primary-foreground hidden md:flex"
+               >
+                 <BarChart className="mr-2 h-4 w-4" />
+                 {t('dashboard.frpsAdmin')}
+               </Button>
+            )}
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setSettingsOpen(true)}
+              className="text-muted-foreground hover:bg-primary hover:text-primary-foreground transition-colors"
+              title={t('common.settings')}
+            >
+              <Settings className="h-5 w-5" />
+            </Button>
+            <Button 
+              size="sm" 
+              onClick={handleLogout}
+              className="text-primary border border-primary hover:bg-primary hover:text-primary-foreground bg-transparent"
+            >
+              <Power className="mr-2 h-4 w-4" />
+              {t('common.logout')}
+            </Button>
+          </div>
         </div>
       </header>
       <div className="container py-6 space-y-6">
@@ -577,7 +683,7 @@ export default function Dashboard() {
         {/* Card 1: Health & Uptime */}
         <Card className="flex flex-col h-64">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Service Health</CardTitle>
+            <CardTitle className="text-sm font-medium">{t('dashboard.serviceHealth')}</CardTitle>
             <div className={`flex items-center gap-2`}>
                 <span className="text-xs text-muted-foreground font-mono">{processInfo?.version ? `v${processInfo.version}` : ''}</span>
                 <div className={`h-2.5 w-2.5 rounded-full ${processInfo?.status === 'running' ? 'bg-green-500 animate-pulse' : 'bg-red-500'}`} />
@@ -587,10 +693,10 @@ export default function Dashboard() {
              <div className="space-y-4">
                 <div>
                     <div className="text-3xl font-bold text-foreground capitalize">
-                        {processInfo?.status || 'Unknown'}
+                        {processInfo?.status || t('dashboard.unknown')}
                     </div>
                     <p className="text-xs text-muted-foreground mt-1">
-                        Current Status
+                        {t('dashboard.currentStatus')}
                     </p>
                 </div>
                 
@@ -604,7 +710,7 @@ export default function Dashboard() {
                         )}
                     </div>
                     <p className="text-xs text-muted-foreground mt-1 pl-6">
-                        Uptime / Since
+                        {t('dashboard.uptimeSince')}
                     </p>
                 </div>
              </div>
@@ -614,7 +720,7 @@ export default function Dashboard() {
         {/* Card 2: Connection Topology */}
         <Card className="flex flex-col h-64">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Connection Info</CardTitle>
+            <CardTitle className="text-sm font-medium">{t('dashboard.connectionInfo')}</CardTitle>
             <Globe className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent className="flex-1 flex flex-col justify-center">
@@ -625,14 +731,14 @@ export default function Dashboard() {
                         <span className="text-lg text-muted-foreground font-normal">:{commonConfig.serverPort || 7000}</span>
                     </div>
                     <p className="text-xs text-muted-foreground mt-1">
-                        Active Server Address
+                        {t('dashboard.activeServerAddress')}
                     </p>
                 </div>
 
                 <div className="pt-4 border-t space-y-3">
                     <div className="flex items-center justify-between text-sm">
                         <span className="text-muted-foreground flex items-center gap-2">
-                            <Lock className="h-3 w-3" /> Token
+                            <Lock className="h-3 w-3" /> {t('dashboard.token')}
                         </span>
                         <span className="font-mono bg-muted px-1.5 py-0.5 rounded text-xs">
                             {commonConfig.token ? '******' : 'None'}
@@ -640,10 +746,10 @@ export default function Dashboard() {
                     </div>
                     <div className="flex items-center justify-between text-sm">
                         <span className="text-muted-foreground flex items-center gap-2">
-                            <FileText className="h-3 w-3" /> Config
+                            <FileText className="h-3 w-3" /> {t('dashboard.config')}
                         </span>
                         <span className="font-mono text-xs truncate max-w-[150px]" title={processInfo?.configPath}>
-                            {processInfo?.configPath ? processInfo.configPath.split('/').pop() : 'Unknown'}
+                            {processInfo?.configPath ? processInfo.configPath.split('/').pop() : t('dashboard.unknown')}
                         </span>
                     </div>
                 </div>
@@ -656,10 +762,10 @@ export default function Dashboard() {
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 border-b border-slate-800/50">
              <CardTitle className="text-sm font-medium text-purple-400 flex items-center gap-2">
                 <Terminal className="h-4 w-4" />
-                Recent Logs
+                {t('dashboard.recentLogs')}
              </CardTitle>
              <Badge variant="outline" className="text-[10px] h-5 border-purple-500/30 text-purple-400">
-                 Live
+                 {t('dashboard.live')}
              </Badge>
           </CardHeader>
           <CardContent className="flex-1 p-0 overflow-hidden relative group bg-black">
@@ -667,7 +773,7 @@ export default function Dashboard() {
                  {logsLoading && !logs ? (
                      <div className="flex items-center justify-center h-full text-slate-500">
                          <Loader2 className="h-5 w-5 animate-spin mr-2" />
-                         Fetching logs...
+                         {t('dashboard.fetchingLogs')}
                      </div>
                  ) : (
                      <div className="space-y-1">
@@ -697,7 +803,7 @@ export default function Dashboard() {
                                  </div>
                              );
                          }) : (
-                             <div className="text-slate-500 italic">No logs available</div>
+                             <div className="text-slate-500 italic">{t('dashboard.noLogsAvailable')}</div>
                          )}
                      </div>
                  )}
@@ -712,7 +818,7 @@ export default function Dashboard() {
                 disabled={logsLoading}
              >
                 <RefreshCw className={`h-3 w-3 mr-1 ${logsLoading ? 'animate-spin' : ''}`} />
-                Refresh
+                {t('dashboard.refresh')}
              </Button>
           </CardContent>
         </Card>
@@ -732,15 +838,15 @@ export default function Dashboard() {
                     <TabsList>
                       <TabsTrigger value="proxies">
                           <LayoutGrid className="h-4 w-4 mr-2" />
-                          Proxies
+                          {t('dashboard.proxies')}
                       </TabsTrigger>
                       <TabsTrigger value="edit">
                           <Settings className="h-4 w-4 mr-2" />
-                          Config Editor
+                          {t('dashboard.configEditor')}
                       </TabsTrigger>
                       <TabsTrigger value="servers">
                           <Server className="h-4 w-4 mr-2" />
-                          Server List
+                          {t('dashboard.serverList')}
                       </TabsTrigger>
                     </TabsList>
                 </div>
@@ -748,9 +854,24 @@ export default function Dashboard() {
                 <TabsContent value="proxies" className="mt-0">
                     <div className="space-y-6">
                         <div className="flex items-center justify-end gap-2">
+                             <input
+                               type="file"
+                               accept=".json"
+                               className="hidden"
+                               id="import-proxies-input"
+                               onChange={handleImportProxies}
+                             />
+                             <Button size="sm" variant="outline" className="h-8" onClick={() => document.getElementById('import-proxies-input')?.click()} title={t('dashboard.import')}>
+                                <Upload className="h-3.5 w-3.5 mr-1" />
+                                <span className="hidden sm:inline">{t('dashboard.import')}</span>
+                             </Button>
+                             <Button size="sm" variant="outline" className="h-8" onClick={handleExportProxies} title={t('dashboard.export')}>
+                                <Download className="h-3.5 w-3.5 mr-1" />
+                                <span className="hidden sm:inline">{t('dashboard.export')}</span>
+                             </Button>
                              <Button size="sm" variant="outline" className="h-8" onClick={handleAddProxy}>
                                 <Plus className="h-3.5 w-3.5 mr-1" />
-                                Add Proxy
+                                {t('dashboard.addProxy')}
                              </Button>
 
                              {selectionMode ? (
@@ -763,13 +884,13 @@ export default function Dashboard() {
                                     disabled={selectedProxies.size === 0}
                                   >
                                     <Trash2 className="h-3.5 w-3.5 mr-1" />
-                                    Delete ({selectedProxies.size})
+                                    {t('dashboard.delete')} ({selectedProxies.size})
                                   </Button>
                                   <Button size="sm" variant="ghost" className="h-8" onClick={() => {
                                     setSelectionMode(false);
                                     setSelectedProxies(new Set());
                                   }}>
-                                    Cancel
+                                    {t('dashboard.cancel')}
                                   </Button>
                                 </>
                              ) : (
@@ -780,13 +901,13 @@ export default function Dashboard() {
                                  onClick={() => setSelectionMode(true)}
                                >
                                  <CheckSquare className="h-3.5 w-3.5 mr-1" />
-                                 Select
+                                 {t('dashboard.select')}
                                </Button>
                              )}
                              
                              <Button size="sm" variant="outline" className="h-8" onClick={() => handleServiceAction('restart')} disabled={serviceLoading || !restartRequired}>
                                 {serviceLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" /> : <RotateCw className="h-3.5 w-3.5 mr-1" />}
-                                Restart Service
+                                {t('dashboard.restartService')}
                              </Button>
                         </div>
                         <ProxyListOverview 
@@ -808,7 +929,7 @@ export default function Dashboard() {
                       <div className="flex items-center justify-end mb-6">
                            <Button size="sm" className="h-8" onClick={handleAddServer}>
                               <Plus className="h-3.5 w-3.5 mr-1" />
-                              Add Server
+                              {t('dashboard.addServer')}
                            </Button>
                       </div>
                       <ServerListOverview 
@@ -866,7 +987,7 @@ export default function Dashboard() {
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle className={feedbackType === 'success' ? 'text-green-600' : 'text-red-600'}>
-              {feedbackType === 'success' ? 'Success' : 'Error'}
+              {feedbackType === 'success' ? t('common.success') : t('common.error')}
             </AlertDialogTitle>
             <AlertDialogDescription>
               {feedbackMessage}
@@ -874,7 +995,7 @@ export default function Dashboard() {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogAction onClick={() => setFeedbackOpen(false)} className={feedbackType === 'success' ? 'bg-green-600 hover:bg-green-700' : 'bg-red-600 hover:bg-red-700'}>
-              OK
+              {t('common.ok')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -883,14 +1004,14 @@ export default function Dashboard() {
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogTitle>{t('dialog.deleteTitle')}</AlertDialogTitle>
             <AlertDialogDescription>
-              This action cannot be undone. This will permanently delete the proxy "{proxyToDelete}".
+              {t('dialog.deleteProxyConfirm', { name: proxyToDelete })}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmDeleteSingle} className="bg-red-600 hover:bg-red-700">Delete</AlertDialogAction>
+            <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDeleteSingle} className="bg-red-600 hover:bg-red-700">{t('common.delete')}</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
@@ -898,15 +1019,15 @@ export default function Dashboard() {
       <AlertDialog open={serverDeleteDialogOpen} onOpenChange={setServerDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogTitle>{t('dialog.deleteTitle')}</AlertDialogTitle>
             <AlertDialogDescription>
-              This action cannot be undone. This will permanently delete the server profile.
-              {serverToDelete?.startsWith('ssh_') && " Note: This will also remove the saved SSH connection."}
+              {t('dialog.deleteServerConfirm')}
+              {serverToDelete?.startsWith('ssh_') && t('dialog.deleteSshNote')}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmDeleteServer} className="bg-red-600 hover:bg-red-700">Delete</AlertDialogAction>
+            <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDeleteServer} className="bg-red-600 hover:bg-red-700">{t('common.delete')}</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
@@ -914,17 +1035,19 @@ export default function Dashboard() {
       <AlertDialog open={batchDeleteDialogOpen} onOpenChange={setBatchDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogTitle>{t('dialog.deleteTitle')}</AlertDialogTitle>
             <AlertDialogDescription>
-              This action cannot be undone. This will permanently delete {selectedProxies.size} proxies.
+              {t('dialog.deleteBatchProxyConfirm', { count: selectedProxies.size })}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmDeleteBatch} className="bg-red-600 hover:bg-red-700">Delete All</AlertDialogAction>
+            <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDeleteBatch} className="bg-red-600 hover:bg-red-700">{t('common.deleteAll')}</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <SettingsDialog open={settingsOpen} onOpenChange={setSettingsOpen} />
     </div>
   );
 }

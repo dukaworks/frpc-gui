@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import toml from '@iarna/toml';
 import type { CommonConfig, ProxyConfig } from '@/shared/types';
 
@@ -65,6 +66,7 @@ function createNewProxy(existingNames: Set<string>): ProxyConfig {
 }
 
 export function useFrpcConfig(initialContent: string) {
+  const { t } = useTranslation();
   const [content, setContent] = useState(initialContent);
   const [configObj, setConfigObj] = useState<any | null>(null);
   const [commonConfig, setCommonConfig] = useState<CommonConfig>({ serverAddr: '', serverPort: 7000 });
@@ -200,7 +202,7 @@ export function useFrpcConfig(initialContent: string) {
       setConfigObj(null);
       setLegacyProxyNames([]);
       setProxies([]);
-      setParseError(e?.message ? String(e.message) : '配置解析失败');
+      setParseError(e?.message ? String(e.message) : t('config.parseFailed'));
     }
   };
 
@@ -259,6 +261,28 @@ export function useFrpcConfig(initialContent: string) {
 
   const deleteProxy = (name: string) => {
     setProxies((prev) => prev.filter((p) => p.name !== name));
+  };
+
+  const importProxies = (newProxies: ProxyConfig[]) => {
+    const currentNames = new Set(proxies.map((p) => p.name));
+    const toAdd: ProxyConfig[] = [];
+
+    for (const p of newProxies) {
+      if (!p.name) continue;
+      let finalName = p.name;
+      let i = 1;
+      while (currentNames.has(finalName)) {
+        finalName = `${p.name}_${i}`;
+        i++;
+      }
+      toAdd.push({ ...p, name: finalName });
+      currentNames.add(finalName);
+    }
+
+    if (toAdd.length > 0) {
+      setProxies((prev) => [...prev, ...toAdd]);
+    }
+    return toAdd.length;
   };
 
   const buildTomlObject = () => {
@@ -357,6 +381,7 @@ export function useFrpcConfig(initialContent: string) {
     renameProxy,
     addProxy,
     deleteProxy,
+    importProxies,
     generateToml,
     refresh: () => parseConfig(content), // Parse current text content
   };
