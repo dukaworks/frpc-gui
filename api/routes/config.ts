@@ -59,6 +59,7 @@ router.post('/connect', async (req: Request, res: Response) => {
     }
 
     await ssh.connect({ host, port: Number.isFinite(port) ? port : 22, username, password, privateKey });
+    sshManager.set(sessionId, ssh);
     
     // Auto scan
     const processInfo = await ssh.scanFrpc();
@@ -70,6 +71,12 @@ router.post('/connect', async (req: Request, res: Response) => {
       process: processInfo
     });
   } catch (error: unknown) {
+    sshManager.delete(sessionId);
+    try {
+      ssh.disconnect();
+    } catch {
+      void 0;
+    }
     console.error('Connect Route Error:', error);
     res.status(500).json({ error: error instanceof Error ? error.message : String(error) });
   }

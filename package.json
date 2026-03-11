@@ -1,7 +1,7 @@
 {
   "name": "frpc-gui",
   "private": false,
-  "version": "0.1.11",
+  "version": "0.1.12",
   "description": "Web-based GUI for managing Frpc configurations remotely via SSH",
   "license": "MIT",
   "author": {
@@ -44,6 +44,13 @@
         "zip"
       ],
       "icon": "dist/favicon.png"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Frpc-GUI"
     },
     "mac": {
       "target": "dmg",
