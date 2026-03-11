@@ -57,38 +57,31 @@ Supported languages: English / 中文 (i18n).
 
 ## 🖼️ Screenshots
 
-Please replace the placeholders below with real screenshots. For best clarity, **English and Chinese should use different screenshots** (same screen, different language).
+English UI screenshots (Chinese UI screenshots are in [README_zh.md](./README_zh.md)).
 
-- Connect / Login page
-  - EN: [docs/screenshots/en/01-connect.png](docs/screenshots/en/01-connect.png)
-  - 中文: [docs/screenshots/zh/01-connect.png](docs/screenshots/zh/01-connect.png)
-- Saved server dropdown (multi-server profiles)
-  - EN: [docs/screenshots/en/02-saved-servers.png](docs/screenshots/en/02-saved-servers.png)
-  - 中文: [docs/screenshots/zh/02-saved-servers.png](docs/screenshots/zh/02-saved-servers.png)
-- Dashboard overview (service status + actions)
-  - EN: [docs/screenshots/en/03-dashboard-overview.png](docs/screenshots/en/03-dashboard-overview.png)
-  - 中文: [docs/screenshots/zh/03-dashboard-overview.png](docs/screenshots/zh/03-dashboard-overview.png)
-- Proxies page (list + add/edit dialog)
-  - EN: [docs/screenshots/en/04-proxies.png](docs/screenshots/en/04-proxies.png)
-  - 中文: [docs/screenshots/zh/04-proxies.png](docs/screenshots/zh/04-proxies.png)
-- Config Editor (visual mode + source mode)
-  - EN: [docs/screenshots/en/05-config-editor.png](docs/screenshots/en/05-config-editor.png)
-  - 中文: [docs/screenshots/zh/05-config-editor.png](docs/screenshots/zh/05-config-editor.png)
-- Logs view (recent + status logs)
-  - EN: [docs/screenshots/en/06-logs.png](docs/screenshots/en/06-logs.png)
-  - 中文: [docs/screenshots/zh/06-logs.png](docs/screenshots/zh/06-logs.png)
-- Settings dialog (FRPS dashboard URL, etc.)
-  - EN: [docs/screenshots/en/07-settings.png](docs/screenshots/en/07-settings.png)
-  - 中文: [docs/screenshots/zh/07-settings.png](docs/screenshots/zh/07-settings.png)
-- Windows installer wizard (directory + shortcuts)
-  - EN: [docs/screenshots/en/08-windows-installer.png](docs/screenshots/en/08-windows-installer.png)
-  - 中文: [docs/screenshots/zh/08-windows-installer.png](docs/screenshots/zh/08-windows-installer.png)
+**Connect / Login**
+![Connect / Login](docs/screenshots/en/01-connect.png)
 
-Once you have screenshots, you can embed them like:
+**Saved Servers**
+![Saved Servers](docs/screenshots/en/02-saved-servers.png)
 
-```md
-![Dashboard overview (EN)](docs/screenshots/en/03-dashboard-overview.png)
-```
+**Dashboard Overview**
+![Dashboard Overview](docs/screenshots/en/03-dashboard-overview.png)
+
+**Proxies**
+![Proxies](docs/screenshots/en/04-proxies.png)
+
+**Config Editor**
+![Config Editor](docs/screenshots/en/05-config-editor.png)
+
+**Logs**
+![Logs](docs/screenshots/en/06-logs.png)
+
+**Settings**
+![Settings](docs/screenshots/en/07-settings.png)
+
+**Windows Installer**
+![Windows Installer](docs/screenshots/en/08-windows-installers.png)
 
 ## 📦 Quick Start
 

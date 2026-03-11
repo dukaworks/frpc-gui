@@ -6,7 +6,7 @@ import { ApiClient } from '@/lib/api';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, Terminal, FileText, Activity, Server, Edit3, ArrowLeft, LayoutGrid, Settings, Plus, RotateCw, Power, RefreshCw, CheckSquare, Trash2, Globe, Lock, BarChart, Download, Upload } from 'lucide-react';
+import { Loader2, Terminal, FileText, Activity, Server, Edit3, ArrowLeft, LayoutGrid, Settings, Plus, RotateCw, Power, RefreshCw, CheckSquare, Trash2, Globe, Lock, BarChart, Download, Upload, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ConfigEditor } from '@/components/ConfigEditor';
 import { ProxyListOverview } from '@/components/ConfigEditor/ProxyListOverview';
@@ -76,7 +76,7 @@ function UptimeDisplay({ startTimestamp }: { startTimestamp: number }) {
 
 export default function Dashboard() {
   const { t } = useTranslation();
-  const { frpsDashboardUrl } = useSettingsStore();
+  const { frpsDashboardUrl, serverPageSize } = useSettingsStore();
   const [settingsOpen, setSettingsOpen] = useState(false);
   const navigate = useNavigate();
   const { isConnected, processInfo, disconnect, setProcessInfo, restartRequired, setRestartRequired } = useFrpcStore();
@@ -231,11 +231,22 @@ export default function Dashboard() {
   // CRUD States
   const [selectionMode, setSelectionMode] = useState(false);
   const [selectedProxies, setSelectedProxies] = useState<Set<string>>(new Set());
+  const [sshCurrentPage, setSshCurrentPage] = useState(1);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [editingProxy, setEditingProxy] = useState<ProxyConfig | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [proxyToDelete, setProxyToDelete] = useState<string | null>(null); // For single delete
   const [batchDeleteDialogOpen, setBatchDeleteDialogOpen] = useState(false);
+
+  const effectiveServerPageSize = Math.max(1, serverPageSize);
+  const sshTotalPages = Math.max(1, Math.ceil(savedConnections.length / effectiveServerPageSize));
+
+  useEffect(() => {
+    setSshCurrentPage((p) => Math.min(p, sshTotalPages));
+  }, [sshTotalPages]);
+
+  const sshStartIndex = (sshCurrentPage - 1) * effectiveServerPageSize;
+  const paginatedSshConnections = savedConnections.slice(sshStartIndex, sshStartIndex + effectiveServerPageSize);
 
   const existingNames = useMemo(() => new Set(proxies.map(p => p.name)), [proxies]);
 
@@ -605,6 +616,15 @@ export default function Dashboard() {
     );
   }
 
+  const openExternalUrl = (url: string) => {
+    if (!url) return;
+    if (window.electron?.openExternal) {
+      void window.electron.openExternal(url);
+      return;
+    }
+    window.open(url, '_blank', 'noopener,noreferrer');
+  };
+
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
@@ -619,11 +639,11 @@ export default function Dashboard() {
                <Button
                  variant="ghost"
                  size="sm"
-                 onClick={() => window.open(frpsDashboardUrl, '_blank')}
-                 className="text-muted-foreground hover:bg-primary hover:text-primary-foreground hidden md:flex"
+                 onClick={() => openExternalUrl(frpsDashboardUrl)}
+                 className="text-muted-foreground hover:bg-primary hover:text-primary-foreground"
                >
-                 <BarChart className="mr-2 h-4 w-4" />
-                 {t('dashboard.frpsAdmin')}
+                 <BarChart className="h-4 w-4 md:mr-2" />
+                 <span className="hidden md:inline">{t('dashboard.frpsAdmin')}</span>
                </Button>
             )}
             <Button
@@ -921,7 +941,7 @@ export default function Dashboard() {
                       <div className="text-sm text-muted-foreground">{t('noSavedServers')}</div>
                     ) : (
                       <div className="space-y-2">
-                        {savedConnections.map((conn) => (
+                        {paginatedSshConnections.map((conn) => (
                           <div key={conn.id} className="flex items-center justify-between rounded-md border px-3 py-2">
                             <div className="min-w-0 flex-1">
                               <p className="text-sm font-medium truncate">{conn.name}</p>
@@ -937,6 +957,34 @@ export default function Dashboard() {
                             </div>
                           </div>
                         ))}
+
+                        {sshTotalPages > 1 && (
+                          <div className="flex items-center justify-end gap-2 pt-2">
+                            <span className="text-sm text-muted-foreground">
+                              {t('common.page')} {sshCurrentPage} / {sshTotalPages}
+                            </span>
+                            <div className="flex items-center gap-1">
+                              <Button
+                                variant="outline"
+                                size="icon"
+                                className="h-8 w-8"
+                                onClick={() => setSshCurrentPage((p) => Math.max(1, p - 1))}
+                                disabled={sshCurrentPage === 1}
+                              >
+                                <ChevronLeft className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                variant="outline"
+                                size="icon"
+                                className="h-8 w-8"
+                                onClick={() => setSshCurrentPage((p) => Math.min(sshTotalPages, p + 1))}
+                                disabled={sshCurrentPage === sshTotalPages}
+                              >
+                                <ChevronRight className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>

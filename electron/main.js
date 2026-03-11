@@ -1,4 +1,4 @@
-import { app, BrowserWindow } from 'electron';
+import { app, BrowserWindow, ipcMain, shell } from 'electron';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
@@ -11,6 +11,17 @@ process.env.NODE_ENV = 'production';
 
 let mainWindow;
 let server;
+
+ipcMain.handle('open-external', async (_event, url) => {
+  try {
+    const parsed = new URL(String(url));
+    if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') return false;
+    await shell.openExternal(parsed.toString());
+    return true;
+  } catch {
+    return false;
+  }
+});
 
 function createWindow(port) {
   mainWindow = new BrowserWindow({
@@ -25,6 +36,18 @@ function createWindow(port) {
   });
 
   mainWindow.loadURL(`http://localhost:${port}`);
+
+  mainWindow.webContents.setWindowOpenHandler(({ url }) => {
+    try {
+      const parsed = new URL(String(url));
+      if (parsed.protocol === 'http:' || parsed.protocol === 'https:') {
+        void shell.openExternal(parsed.toString());
+      }
+    } catch {
+      void 0;
+    }
+    return { action: 'deny' };
+  });
 
   mainWindow.on('closed', function () {
     mainWindow = null;

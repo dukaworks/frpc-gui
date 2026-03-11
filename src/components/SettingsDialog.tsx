@@ -108,7 +108,11 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
     }
 
     if (finalUrl) {
-       window.open(finalUrl, '_blank');
+       if (window.electron?.openExternal) {
+         void window.electron.openExternal(finalUrl);
+         return;
+       }
+       window.open(finalUrl, '_blank', 'noopener,noreferrer');
     }
   };
 

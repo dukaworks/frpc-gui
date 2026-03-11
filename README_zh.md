@@ -59,38 +59,31 @@
 
 ## 🖼️ 截图
 
-这里先放占位清单。你后续补图时，建议 **中文 README 用中文界面截图，英文 README 用英文界面截图**（同一页面，两套图）。
+中文界面截图（英文界面截图见 [README.md](./README.md)）。
 
-- 连接 / 登录页
-  - 中文：[docs/screenshots/zh/01-connect.png](docs/screenshots/zh/01-connect.png)
-  - EN：[docs/screenshots/en/01-connect.png](docs/screenshots/en/01-connect.png)
-- 已保存服务器下拉（多服务器配置）
-  - 中文：[docs/screenshots/zh/02-saved-servers.png](docs/screenshots/zh/02-saved-servers.png)
-  - EN：[docs/screenshots/en/02-saved-servers.png](docs/screenshots/en/02-saved-servers.png)
-- Dashboard 总览（服务状态 + 操作）
-  - 中文：[docs/screenshots/zh/03-dashboard-overview.png](docs/screenshots/zh/03-dashboard-overview.png)
-  - EN：[docs/screenshots/en/03-dashboard-overview.png](docs/screenshots/en/03-dashboard-overview.png)
-- Proxies 页面（列表 + 新增/编辑弹窗）
-  - 中文：[docs/screenshots/zh/04-proxies.png](docs/screenshots/zh/04-proxies.png)
-  - EN：[docs/screenshots/en/04-proxies.png](docs/screenshots/en/04-proxies.png)
-- Config Editor（可视化 + 源码模式）
-  - 中文：[docs/screenshots/zh/05-config-editor.png](docs/screenshots/zh/05-config-editor.png)
-  - EN：[docs/screenshots/en/05-config-editor.png](docs/screenshots/en/05-config-editor.png)
-- Logs（最近日志 + 状态日志）
-  - 中文：[docs/screenshots/zh/06-logs.png](docs/screenshots/zh/06-logs.png)
-  - EN：[docs/screenshots/en/06-logs.png](docs/screenshots/en/06-logs.png)
-- 设置弹窗（FRPS Dashboard URL 等）
-  - 中文：[docs/screenshots/zh/07-settings.png](docs/screenshots/zh/07-settings.png)
-  - EN：[docs/screenshots/en/07-settings.png](docs/screenshots/en/07-settings.png)
-- Windows 安装向导（目录选择 + 快捷方式）
-  - 中文：[docs/screenshots/zh/08-windows-installer.png](docs/screenshots/zh/08-windows-installer.png)
-  - EN：[docs/screenshots/en/08-windows-installer.png](docs/screenshots/en/08-windows-installer.png)
+**连接 / 登录**
+![连接 / 登录](docs/screenshots/zh/01-connect.png)
 
-嵌入方式示例：
+**已保存服务器**
+![已保存服务器](docs/screenshots/zh/02-saved-servers.png)
 
-```md
-![Dashboard 总览（中文）](docs/screenshots/zh/03-dashboard-overview.png)
-```
+**Dashboard 总览**
+![Dashboard 总览](docs/screenshots/zh/03-dashboard-overview.png)
+
+**Proxies**
+![Proxies](docs/screenshots/zh/04-proxies.png)
+
+**配置编辑器**
+![配置编辑器](docs/screenshots/zh/05-config-editor.png)
+
+**日志**
+![日志](docs/screenshots/zh/06-logs.png)
+
+**设置**
+![设置](docs/screenshots/zh/07-settings.png)
+
+**Windows 安装向导**
+![Windows 安装向导](docs/screenshots/zh/08-windows-installers.png)
 
 ## 💡 使用场景与部署建议
 
