@@ -1,7 +1,7 @@
 # Frpc-GUI
 
 <p align="center">
-  <img src="project_docs/images/dukaworks-logo-up-with-words.png" alt="DukaWorks Logo" width="200" />
+  <img src="src/assets/dukaworks-logo-left-with-words.png" alt="DukaWorks Logo" width="220" />
 </p>
 
 <p align="center">
@@ -10,8 +10,9 @@
 
 <p align="center">
   <a href="./LICENSE"><img src="https://img.shields.io/badge/license-MIT-8A2BE2.svg" alt="License"></a>
-  <img src="https://img.shields.io/badge/version-0.1.8-8A2BE2.svg" alt="Version">
+  <a href="https://github.com/dukaworks/frpc-gui/releases"><img src="https://img.shields.io/github/v/release/dukaworks/frpc-gui?display_name=tag&sort=semver" alt="Release"></a>
   <a href="https://github.com/dukaworks/frpc-gui/actions/workflows/docker-publish.yml"><img src="https://github.com/dukaworks/frpc-gui/actions/workflows/docker-publish.yml/badge.svg" alt="Docker Build & Publish"></a>
+  <a href="https://github.com/dukaworks/frpc-gui/actions/workflows/desktop-release.yml"><img src="https://github.com/dukaworks/frpc-gui/actions/workflows/desktop-release.yml/badge.svg" alt="Desktop Build & Release"></a>
   <br>
   <a href="https://x.com/dukatalk"><img src="https://img.shields.io/badge/X-Follow%20@dukatalk-black.svg?logo=x" alt="Follow on X"></a>
   <a href="https://t.me/zychen2022"><img src="https://img.shields.io/badge/Telegram-Channel-8A2BE2.svg?logo=telegram" alt="Telegram Channel"></a>
@@ -24,7 +25,9 @@
 
 ---
 
-**Frpc-GUI** 是由 **DukaWorks (DUKA工作室)** 开发的一款现代化、用户友好的 Web 界面，用于管理您的 Frpc (Fast Reverse Proxy Client) 配置文件。您无需再通过 SSH 登录服务器手动编辑 TOML/INI 文件，而是可以使用这个可视化的仪表盘来轻松添加、编辑、删除代理，管理多个服务器，并查看实时日志。
+**Frpc-GUI** 是由 **DukaWorks (DUKA工作室)** 开发的一款现代化仪表盘，用于通过 **SSH 远程管理 frpc**（Fast Reverse Proxy Client）。它把“SSH 登录 + nano 改配置”这套流程，变成可视化：连接、编辑代理/配置、必要时重启服务并查看日志。
+
+如果你主要在路由器 / NAS / 服务器（PVE、OpenWrt、fnOS 等）上运行 frpc，推荐的方式是：把 Frpc-GUI 安装在你的电脑上，通过 SSH 去远程管理 frpc。
 
 ## ✨ 功能特性
 
@@ -33,8 +36,61 @@
 - 🔄 **完整的 CRUD 支持**：轻松添加、编辑、删除（单个/批量）代理。
 - 🖥️ **多服务器支持**：保存并在多个 Frpc 服务器配置之间快速切换。
 - 📊 **实时日志**：查看正在运行的 Frpc 服务（Docker、Systemd 或进程）的实时日志。
-- 🛡️ **安全优先**：内置配置备份和“重启服务”时的安全检查机制。
-- 📄 **TOML 支持**：原生支持现代化的 TOML 配置文件格式。
+- 🛡️ **工作流友好**：支持“保存并重启”等常用操作路径。
+- 📄 **TOML 友好**：对现代化的 `frpc.toml` 支持更佳（也兼容不少 INI 场景）。
+
+支持语言：中文 / English（可在应用内切换）。
+
+## 🧭 目录
+
+- [截图](#️-截图)
+- [快速开始](#-快速开始)
+  - [桌面版（推荐）](#桌面版推荐)
+  - [Docker（推荐）](#docker推荐)
+  - [开发与本地运行](#开发与本地运行)
+- [操作手册（按用户足迹）](#-操作手册按用户足迹)
+- [数据与安全](#-数据与安全)
+- [常见问题与排错](#-常见问题与排错)
+- [未来规划（Roadmap）](#-未来规划roadmap)
+- [配置参考](#️-配置参考)
+- [社区与支持](#-社区与支持)
+- [贡献指南](#-贡献指南)
+- [许可证](#-许可证)
+
+## 🖼️ 截图
+
+这里先放占位清单。你后续补图时，建议 **中文 README 用中文界面截图，英文 README 用英文界面截图**（同一页面，两套图）。
+
+- 连接 / 登录页
+  - 中文：[docs/screenshots/zh/01-connect.png](docs/screenshots/zh/01-connect.png)
+  - EN：[docs/screenshots/en/01-connect.png](docs/screenshots/en/01-connect.png)
+- 已保存服务器下拉（多服务器配置）
+  - 中文：[docs/screenshots/zh/02-saved-servers.png](docs/screenshots/zh/02-saved-servers.png)
+  - EN：[docs/screenshots/en/02-saved-servers.png](docs/screenshots/en/02-saved-servers.png)
+- Dashboard 总览（服务状态 + 操作）
+  - 中文：[docs/screenshots/zh/03-dashboard-overview.png](docs/screenshots/zh/03-dashboard-overview.png)
+  - EN：[docs/screenshots/en/03-dashboard-overview.png](docs/screenshots/en/03-dashboard-overview.png)
+- Proxies 页面（列表 + 新增/编辑弹窗）
+  - 中文：[docs/screenshots/zh/04-proxies.png](docs/screenshots/zh/04-proxies.png)
+  - EN：[docs/screenshots/en/04-proxies.png](docs/screenshots/en/04-proxies.png)
+- Config Editor（可视化 + 源码模式）
+  - 中文：[docs/screenshots/zh/05-config-editor.png](docs/screenshots/zh/05-config-editor.png)
+  - EN：[docs/screenshots/en/05-config-editor.png](docs/screenshots/en/05-config-editor.png)
+- Logs（最近日志 + 状态日志）
+  - 中文：[docs/screenshots/zh/06-logs.png](docs/screenshots/zh/06-logs.png)
+  - EN：[docs/screenshots/en/06-logs.png](docs/screenshots/en/06-logs.png)
+- 设置弹窗（FRPS Dashboard URL 等）
+  - 中文：[docs/screenshots/zh/07-settings.png](docs/screenshots/zh/07-settings.png)
+  - EN：[docs/screenshots/en/07-settings.png](docs/screenshots/en/07-settings.png)
+- Windows 安装向导（目录选择 + 快捷方式）
+  - 中文：[docs/screenshots/zh/08-windows-installer.png](docs/screenshots/zh/08-windows-installer.png)
+  - EN：[docs/screenshots/en/08-windows-installer.png](docs/screenshots/en/08-windows-installer.png)
+
+嵌入方式示例：
+
+```md
+![Dashboard 总览（中文）](docs/screenshots/zh/03-dashboard-overview.png)
+```
 
 ## 💡 使用场景与部署建议
 
@@ -49,7 +105,19 @@
 
 ## 📦 快速开始
 
-### Docker (推荐)
+### 桌面版（推荐）
+
+直接从 GitHub Releases 下载：
+
+- https://github.com/dukaworks/frpc-gui/releases
+
+通常包含：
+
+- Windows：`.exe` 安装包 + `.zip`
+- macOS：`.dmg`
+- Linux：`.deb`
+
+### Docker（推荐）
 
 #### 选项 1: Docker Compose (最简单)
 
@@ -73,7 +141,7 @@ docker run -d \
 - 如果你主要用它来“通过 SSH 管理远端 frpc”，不需要挂载任何本地 frpc 配置文件。
 - 如果你希望让容器直接编辑宿主机上的 `frpc.toml`，再挂载配置文件即可（例如挂到 `/etc/frp/frpc.toml`）。
 
-### 手动安装
+### 开发与本地运行
 
 1.  克隆仓库：
     ```bash
@@ -91,16 +159,13 @@ docker run -d \
     npm run dev
     ```
 
-### 桌面客户端 (Electron)
+本地构建桌面安装包：
 
-您可以为您的操作系统（Windows, macOS 或 Linux）构建独立的桌面应用程序。
+```bash
+npm run electron:build
+```
 
-1.  构建应用程序：
-    ```bash
-    npm run electron:build
-    ```
-
-2.  生成的安装包/可执行文件将位于 `release` 目录下。
+生成的安装包/可执行文件将位于 `release` 目录下。
 
 ## 🧭 操作手册（按用户足迹）
 
@@ -154,6 +219,11 @@ docker run -d \
 本仓库包含一份详尽的示例配置文件，帮助您了解所有可用选项。
 
 *   [**frpc_sample.toml**](./frpc_sample.toml): 包含 TCP, UDP, HTTP, HTTPS, STCP, XTCP 以及插件配置的示例。
+
+## 🛣️ 未来规划（Roadmap）
+
+- 配置保存操作审计 / 历史版本 / 一键回滚
+- 更友好的引导：首次连接成功后给出下一步入口（Proxies / 配置 / 日志）
 
 ## 🤝 社区与支持
 

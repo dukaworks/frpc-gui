@@ -1,17 +1,18 @@
 # Frpc-GUI
 
 <p align="center">
-  <img src="project_docs/images/dukaworks-logo-up-with-words.png" alt="DukaWorks Logo" width="200" />
+  <img src="src/assets/dukaworks-logo-left-with-words.png" alt="DukaWorks Logo" width="220" />
 </p>
 
 <p align="center">
-  <strong>Web-based GUI for managing Frpc configurations remotely via SSH</strong>
+  <strong>Web-based GUI for managing Frpc remotely (via SSH)</strong>
 </p>
 
 <p align="center">
   <a href="./LICENSE"><img src="https://img.shields.io/badge/license-MIT-8A2BE2.svg" alt="License"></a>
-  <img src="https://img.shields.io/badge/version-0.1.8-8A2BE2.svg" alt="Version">
+  <a href="https://github.com/dukaworks/frpc-gui/releases"><img src="https://img.shields.io/github/v/release/dukaworks/frpc-gui?display_name=tag&sort=semver" alt="Release"></a>
   <a href="https://github.com/dukaworks/frpc-gui/actions/workflows/docker-publish.yml"><img src="https://github.com/dukaworks/frpc-gui/actions/workflows/docker-publish.yml/badge.svg" alt="Docker Build & Publish"></a>
+  <a href="https://github.com/dukaworks/frpc-gui/actions/workflows/desktop-release.yml"><img src="https://github.com/dukaworks/frpc-gui/actions/workflows/desktop-release.yml/badge.svg" alt="Desktop Build & Release"></a>
   <br>
   <a href="https://x.com/dukatalk"><img src="https://img.shields.io/badge/X-Follow%20@dukatalk-black.svg?logo=x" alt="Follow on X"></a>
   <a href="https://t.me/zychen2022"><img src="https://img.shields.io/badge/Telegram-Channel-8A2BE2.svg?logo=telegram" alt="Telegram Channel"></a>
@@ -24,32 +25,86 @@
 
 ---
 
-**Frpc-GUI** is a modern, user-friendly web interface developed by **DukaWorks** for managing your Frpc (Fast Reverse Proxy Client) configuration files. Instead of editing TOML/INI files manually via SSH, you can use this visual dashboard to add, edit, and delete proxies, manage multiple servers, and view real-time logs with ease.
+**Frpc-GUI** is a modern dashboard for managing **frpc** (Fast Reverse Proxy Client) on remote machines over **SSH**. It replaces “SSH + nano” with a visual workflow: connect, edit proxies/config, and restart the service when needed.
+
+If you mainly run frpc on routers / NAS / servers (PVE, OpenWrt, fnOS, etc.), the recommended setup is: install Frpc-GUI on your own PC, and manage the remote frpc via SSH.
 
 ## ✨ Features
 
-- 🚀 **Remote Management**: Connect to any server running Frpc via SSH.
-- 🎨 **Visual Configuration**: User-friendly form-based editor for Frpc proxies.
-- 🔄 **Full CRUD Support**: Add, Edit, Delete (Single/Batch) proxies easily.
-- 🖥️ **Multi-Server Support**: Save and switch between multiple Frpc server profiles.
-- 📊 **Real-time Logs**: View live logs from the running Frpc service (Docker, Systemd, or Process).
-- 🛡️ **Safety First**: Built-in configuration backup and "Restart Service" safety checks.
-- 📄 **TOML Support**: Native support for the modern TOML configuration format.
+- 🚀 **Remote management**: Connect to any server running frpc via SSH.
+- 🎨 **Visual editor**: Manage proxies with a form UI (and a source/code mode when needed).
+- 🔄 **CRUD**: Add / edit / delete proxies (single or batch).
+- 🖥️ **Multi-server profiles**: Save and switch between multiple SSH targets.
+- 📊 **Logs & status**: View logs and control frpc when running as Docker/Systemd/Process.
+- 📄 **TOML friendly**: Works well with modern `frpc.toml` (INI also supported in many cases).
 
-## 💡 Usage Scenarios & Recommendations
+Supported languages: English / 中文 (i18n).
 
-*   **Desktop Environment (Released Versions)**
-    *   Recommended for use on **Windows PC, macOS, Laptops**, or **Linux Desktop**. Manage remote frpc services running on servers, NAS, or routers via SSH connection.
+## 🧭 Table of Contents
 
-*   **Production Environment Management (Remote Management)**
-    *   For frpc running in production environments like **PVE, OpenWrt (e.g., iStoreOS), or fnOS**, it is recommended to install Frpc-GUI on a separate management device (like your laptop) and manage it remotely via SSH. This "separation of control plane and data plane" approach is more robust and prevents management tools from interfering with the production environment.
+- [Screenshots](#-screenshots)
+- [Quick Start](#-quick-start)
+  - [Desktop (Recommended)](#desktop-recommended)
+  - [Docker](#docker)
+  - [Development](#development)
+- [How It Works](#-how-it-works)
+- [Security Notes](#-security-notes)
+- [Roadmap](#-roadmap)
+- [Configuration Reference](#️-configuration-reference)
+- [Community & Support](#-community--support)
+- [Contributing](#-contributing)
+- [License](#-license)
 
-*   **Future Roadmap**
-    *   We plan to release an **All-In-One Docker image (Frpc + GUI)** for out-of-the-box usage. At that time, Frpc-GUI can be deployed directly on the target device as the default web management interface, integrating seamlessly with frpc.
+## 🖼️ Screenshots
+
+Please replace the placeholders below with real screenshots. For best clarity, **English and Chinese should use different screenshots** (same screen, different language).
+
+- Connect / Login page
+  - EN: [docs/screenshots/en/01-connect.png](docs/screenshots/en/01-connect.png)
+  - 中文: [docs/screenshots/zh/01-connect.png](docs/screenshots/zh/01-connect.png)
+- Saved server dropdown (multi-server profiles)
+  - EN: [docs/screenshots/en/02-saved-servers.png](docs/screenshots/en/02-saved-servers.png)
+  - 中文: [docs/screenshots/zh/02-saved-servers.png](docs/screenshots/zh/02-saved-servers.png)
+- Dashboard overview (service status + actions)
+  - EN: [docs/screenshots/en/03-dashboard-overview.png](docs/screenshots/en/03-dashboard-overview.png)
+  - 中文: [docs/screenshots/zh/03-dashboard-overview.png](docs/screenshots/zh/03-dashboard-overview.png)
+- Proxies page (list + add/edit dialog)
+  - EN: [docs/screenshots/en/04-proxies.png](docs/screenshots/en/04-proxies.png)
+  - 中文: [docs/screenshots/zh/04-proxies.png](docs/screenshots/zh/04-proxies.png)
+- Config Editor (visual mode + source mode)
+  - EN: [docs/screenshots/en/05-config-editor.png](docs/screenshots/en/05-config-editor.png)
+  - 中文: [docs/screenshots/zh/05-config-editor.png](docs/screenshots/zh/05-config-editor.png)
+- Logs view (recent + status logs)
+  - EN: [docs/screenshots/en/06-logs.png](docs/screenshots/en/06-logs.png)
+  - 中文: [docs/screenshots/zh/06-logs.png](docs/screenshots/zh/06-logs.png)
+- Settings dialog (FRPS dashboard URL, etc.)
+  - EN: [docs/screenshots/en/07-settings.png](docs/screenshots/en/07-settings.png)
+  - 中文: [docs/screenshots/zh/07-settings.png](docs/screenshots/zh/07-settings.png)
+- Windows installer wizard (directory + shortcuts)
+  - EN: [docs/screenshots/en/08-windows-installer.png](docs/screenshots/en/08-windows-installer.png)
+  - 中文: [docs/screenshots/zh/08-windows-installer.png](docs/screenshots/zh/08-windows-installer.png)
+
+Once you have screenshots, you can embed them like:
+
+```md
+![Dashboard overview (EN)](docs/screenshots/en/03-dashboard-overview.png)
+```
 
 ## 📦 Quick Start
 
-### Docker (Recommended)
+### Desktop (Recommended)
+
+Download from GitHub Releases:
+
+- https://github.com/dukaworks/frpc-gui/releases
+
+Artifacts include:
+
+- Windows: `.exe` installer + `.zip`
+- macOS: `.dmg`
+- Linux: `.deb`
+
+### Docker
 
 #### Option 1: Docker Compose (Easiest)
 
@@ -73,7 +128,7 @@ Notes:
 - If you use Frpc-GUI mainly to manage remote frpc via SSH, you don't need to mount any local config file.
 - If you want the container to edit a local `frpc.toml` on the host, mount it (e.g. `/etc/frp/frpc.toml`).
 
-### Manual Installation
+### Development
 
 1.  Clone the repository:
     ```bash
@@ -91,16 +146,30 @@ Notes:
     npm run dev
     ```
 
-### Desktop App (Electron)
+Build a desktop installer locally:
 
-You can build a standalone desktop application for your OS (Windows, macOS, or Linux).
+```bash
+npm run electron:build
+```
 
-1.  Build the application:
-    ```bash
-    npm run electron:build
-    ```
+The installer/executable will be generated in the `release` directory.
 
-2.  The installer/executable will be generated in the `release` directory.
+## 🔧 How It Works
+
+- The desktop app bundles a local Express server and a React UI (Electron).
+- You connect to the remote machine via SSH.
+- Every action (scan status, read/write config, restart service, fetch logs) runs on the target machine through the SSH session.
+
+## 🔐 Security Notes
+
+- SSH credentials are stored locally on your machine (browser storage / desktop app storage).
+- Prefer SSH keys over passwords, and protect your private key with a passphrase.
+- The app binds the embedded server to `127.0.0.1` (desktop mode) for safety.
+
+## 🛣️ Roadmap
+
+- Operation audit & rollback for config saves (history snapshots + one-click revert)
+- More guided onboarding (first connection → next steps)
 
 ## ⚙️ Configuration Reference
 
