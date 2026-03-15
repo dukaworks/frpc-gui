@@ -31,5 +31,11 @@ release/
 release-artifacts*/
 release-artifacts2*/
 
+# Local environment files
+.env.local
+
+# IDE settings
+.obsidian/
+
 # Local-only project documents
 project_docs/

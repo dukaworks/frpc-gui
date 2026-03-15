@@ -1,0 +1,40 @@
+version: '3.8'
+
+# All-In-One (AIO) Deployment Example
+# This docker-compose file demonstrates how to run frpc-gui and frpc in the same environment
+# with direct file sharing and webServer API integration
+
+services:
+  frpc-gui:
+    image: ghcr.io/dukaworks/frpc-gui:latest
+    container_name: frpc-gui
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - FRPC_GUI_MODE=local
+      # Path to the shared frpc configuration file
+      - FRPC_CONFIG_PATH=/etc/frp/frpc.toml
+      # Frpc webServer API configuration for reload/status operations
+      - FRPC_WEB_SERVER_ADDR=frpc
+      - FRPC_WEB_SERVER_PORT=7400
+    volumes:
+      # Shared volume for configuration file access
+      - frp-data:/etc/frp
+    restart: unless-stopped
+    depends_on:
+      - frpc
+
+  frpc:
+    image: fatedier/frp:latest
+    container_name: frpc
+    volumes:
+      # Shared volume for configuration file access
+      - frp-data:/etc/frp
+    command: frpc -c /etc/frp/frpc.toml
+    restart: unless-stopped
+
+volumes:
+  # Shared volume for frpc configuration
+  frp-data:
