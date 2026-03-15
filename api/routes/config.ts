@@ -1,16 +1,51 @@
 import { Router, type NextFunction, type Request, type Response } from 'express';
 import SshService, { sshManager } from '../services/sshService.js';
+import { readFileSync, writeFileSync } from 'fs';
 
 const router = Router();
 
 type AuthedRequest = Request & { ssh: SshService };
+type LocalAuthedRequest = Request & { localFileService: LocalFileService };
+
+// Local file service for local mode operations
+class LocalFileService {
+  async readFile(path: string): Promise<string> {
+    try {
+      return readFileSync(path, 'utf8');
+    } catch (error) {
+      throw new Error(`Failed to read file: ${error instanceof Error ? error.message : String(error)}`);
+    }
+  }
+
+  async writeFile(path: string, content: string): Promise<void> {
+    try {
+      writeFileSync(path, content, 'utf8');
+    } catch (error) {
+      throw new Error(`Failed to write file: ${error instanceof Error ? error.message : String(error)}`);
+    }
+  }
+}
+
+const localFileService = new LocalFileService();
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null;
 }
 
-// Middleware to check SSH session
+// Middleware to check SSH session or use local mode
 const requireAuth = (req: Request, res: Response, next: NextFunction) => {
+  // Check if we're in local mode
+  const isLocalMode = process.env.FRPC_GUI_MODE === 'local';
+  
+  if (isLocalMode) {
+    // In local mode, we don't need SSH session
+    // But we still attach a local file service for file operations
+    (req as LocalAuthedRequest).localFileService = localFileService;
+    next();
+    return;
+  }
+
+  // Standard SSH mode
   const sessionIdRaw = req.headers['x-session-id'];
   const sessionId =
     typeof sessionIdRaw === 'string'
@@ -36,6 +71,21 @@ const requireAuth = (req: Request, res: Response, next: NextFunction) => {
 
 // Connect
 router.post('/connect', async (req: Request, res: Response) => {
+  // Check if we're in local mode
+  const isLocalMode = process.env.FRPC_GUI_MODE === 'local';
+  
+  if (isLocalMode) {
+    // In local mode, we don't need SSH connection
+    // Return a mock session ID and null process info
+    const sessionId = Math.random().toString(36).substring(7);
+    res.json({ 
+      sessionId, 
+      status: 'connected',
+      process: null
+    });
+    return;
+  }
+
   const body = isRecord(req.body) ? req.body : {};
   const host = typeof body.host === 'string' ? body.host : '';
   const username = typeof body.username === 'string' ? body.username : '';
@@ -85,8 +135,18 @@ router.post('/connect', async (req: Request, res: Response) => {
 // Re-scan
 router.post('/scan', requireAuth, async (req: Request, res: Response) => {
     try {
-        const processInfo = await (req as AuthedRequest).ssh.scanFrpc();
-        res.json({ process: processInfo });
+        // Check if we're in local mode
+        const isLocalMode = process.env.FRPC_GUI_MODE === 'local';
+        
+        if (isLocalMode) {
+            // In local mode, we can't scan remote SSH services
+            // Return null to indicate no remote service found
+            res.json({ process: null });
+        } else {
+            // Standard SSH mode
+            const processInfo = await (req as AuthedRequest).ssh.scanFrpc();
+            res.json({ process: processInfo });
+        }
     } catch (error: unknown) {
         res.status(500).json({ error: error instanceof Error ? error.message : String(error) });
     }
@@ -98,8 +158,18 @@ router.get('/config', requireAuth, async (req: Request, res: Response) => {
   if (!path) return res.status(400).json({ error: 'Path required' });
 
   try {
-    const content = await (req as AuthedRequest).ssh.readFile(path);
-    res.json({ content, format: 'text' });
+    // Check if we're in local mode
+    const isLocalMode = process.env.FRPC_GUI_MODE === 'local';
+    
+    if (isLocalMode) {
+      // In local mode, read file directly
+      const content = await (req as LocalAuthedRequest).localFileService.readFile(path);
+      res.json({ content, format: 'text' });
+    } else {
+      // Standard SSH mode
+      const content = await (req as AuthedRequest).ssh.readFile(path);
+      res.json({ content, format: 'text' });
+    }
   } catch (error: unknown) {
     res.status(500).json({ error: error instanceof Error ? error.message : String(error) });
   }
@@ -113,8 +183,18 @@ router.post('/config', requireAuth, async (req: Request, res: Response) => {
   if (!path || !content) return res.status(400).json({ error: 'Path and content required' });
 
   try {
-    await (req as AuthedRequest).ssh.writeFile(path, content);
-    res.json({ success: true });
+    // Check if we're in local mode
+    const isLocalMode = process.env.FRPC_GUI_MODE === 'local';
+    
+    if (isLocalMode) {
+      // In local mode, write file directly
+      await (req as LocalAuthedRequest).localFileService.writeFile(path, content);
+      res.json({ success: true });
+    } else {
+      // Standard SSH mode
+      await (req as AuthedRequest).ssh.writeFile(path, content);
+      res.json({ success: true });
+    }
   } catch (error: unknown) {
     res.status(500).json({ error: error instanceof Error ? error.message : String(error) });
   }
@@ -127,6 +207,14 @@ router.post('/service', requireAuth, async (req: Request, res: Response) => {
   const type = typeof body.type === 'string' ? body.type : '';
   const serviceName = typeof body.serviceName === 'string' ? body.serviceName : '';
   const requiresSudo = typeof body.requiresSudo === 'boolean' ? body.requiresSudo : false;
+  
+  // Check if we're in local mode
+  const isLocalMode = process.env.FRPC_GUI_MODE === 'local';
+  
+  if (isLocalMode) {
+    // In local mode, we can't control remote services
+    return res.status(400).json({ error: 'Service control not available in local mode' });
+  }
   
   if (!action || !type || !serviceName) {
       return res.status(400).json({ error: 'Missing parameters: action, type, serviceName' });
@@ -168,6 +256,14 @@ router.get('/logs', requireAuth, async (req: Request, res: Response) => {
   const lines = typeof req.query.lines === 'string' ? req.query.lines : '50';
   const sinceHours = typeof req.query.sinceHours === 'string' ? req.query.sinceHours : undefined;
 
+  // Check if we're in local mode
+  const isLocalMode = process.env.FRPC_GUI_MODE === 'local';
+  
+  if (isLocalMode) {
+    // In local mode, we can't fetch remote service logs
+    return res.status(400).json({ error: 'Service logs not available in local mode' });
+  }
+
   if (!type || !serviceName) {
     return res.status(400).json({ error: 'Missing type or serviceName' });
   }
@@ -193,6 +289,51 @@ router.get('/logs', requireAuth, async (req: Request, res: Response) => {
     res.json({ logs: output });
   } catch (error: unknown) {
     res.status(500).json({ error: error instanceof Error ? error.message : String(error) });
+  }
+});
+
+router.get('/test-url', requireAuth, async (req: Request, res: Response) => {
+  const rawUrl = typeof req.query.url === 'string' ? req.query.url : '';
+  if (!rawUrl) {
+    res.status(400).json({ error: 'URL required' });
+    return;
+  }
+
+  const finalUrl = /^https?:\/\//i.test(rawUrl) ? rawUrl : `http://${rawUrl}`;
+
+  let url: URL;
+  try {
+    url = new URL(finalUrl);
+  } catch {
+    res.status(400).json({ error: 'Invalid URL' });
+    return;
+  }
+
+  if (url.protocol !== 'http:' && url.protocol !== 'https:') {
+    res.status(400).json({ error: 'Unsupported protocol' });
+    return;
+  }
+
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 5000);
+
+  try {
+    const resp = await fetch(url.toString(), {
+      method: 'GET',
+      redirect: 'follow',
+      signal: controller.signal,
+    });
+
+    res.json({
+      ok: resp.ok,
+      status: resp.status,
+      statusText: resp.statusText,
+    });
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : String(error);
+    res.json({ ok: false, error: message });
+  } finally {
+    clearTimeout(timeout);
   }
 });
 

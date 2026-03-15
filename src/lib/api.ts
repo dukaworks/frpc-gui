@@ -6,6 +6,7 @@ type ScanResponse = { process: FrpcProcessInfo | null };
 type LogsResponse = { logs: string };
 type SaveConfigResponse = { success: boolean };
 type ServiceControlResponse = { output: string; success: boolean };
+type TestUrlResponse = { ok: boolean; status?: number; statusText?: string; error?: string };
 
 type ConnectCredentials = {
   host: string;
@@ -41,7 +42,12 @@ export class ApiClient {
   private static async request<T = unknown>(endpoint: string, options: RequestInit = {}): Promise<T> {
     const headers = new Headers(options.headers);
     headers.set('Content-Type', 'application/json');
-    headers.set('x-session-id', this.getSessionId() || '');
+    
+    // Only set session ID header if not in local mode
+    const isLocalMode = import.meta.env.VITE_FRPC_GUI_MODE === 'local';
+    if (!isLocalMode) {
+      headers.set('x-session-id', this.getSessionId() || '');
+    }
 
     const res = await fetch(`${API_BASE}${endpoint}`, {
       ...options,
@@ -109,5 +115,9 @@ export class ApiClient {
 
   static async scan(): Promise<ScanResponse> {
     return this.request<ScanResponse>('/scan', { method: 'POST' });
+  }
+
+  static async testUrl(url: string): Promise<TestUrlResponse> {
+    return this.request<TestUrlResponse>(`/test-url?url=${encodeURIComponent(url)}`);
   }
 }

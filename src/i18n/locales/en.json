@@ -93,6 +93,8 @@
     "importError": "Import failed: Invalid file format",
     "addServer": "Add Server",
     "frpsAdmin": "Frps Dashboard",
+    "openFrpsServer": "Open Frps Server",
+    "frpsUrlNotSet": "Please configure the FRPS dashboard URL in Settings first.",
     "starting": "Starting...",
     "up": "Up",
     "seconds": "seconds",
@@ -116,7 +118,10 @@
     "username": "Username",
     "password": "Password",
     "frpsNote": "Note: These credentials are saved locally in your browser to generate the quick access link.",
-    "testAccess": "Test Access"
+    "testAccess": "Test Access",
+    "testAccessEmpty": "Please enter a dashboard URL first.",
+    "testAccessSuccess": "Dashboard is reachable (HTTP {{status}}).",
+    "testAccessFailed": "Dashboard is not reachable. {{error}}"
   },
   "proxy": {
     "editTitle": "Edit Proxy",

@@ -93,6 +93,8 @@
     "importError": "导入失败：文件格式错误",
     "addServer": "添加服务器",
     "frpsAdmin": "Frps 面板",
+    "openFrpsServer": "访问Frps服务器",
+    "frpsUrlNotSet": "请先在设置中配置 FRPS 仪表盘地址。",
     "starting": "正在启动...",
     "up": "运行时长",
     "seconds": "秒",
@@ -116,7 +118,10 @@
     "username": "用户名",
     "password": "密码",
     "frpsNote": "注意：这些凭据仅保存在您的浏览器本地，用于生成快捷访问链接。",
-    "testAccess": "测试访问"
+    "testAccess": "测试访问",
+    "testAccessEmpty": "请先填写仪表盘地址。",
+    "testAccessSuccess": "仪表盘可访问（HTTP {{status}}）。",
+    "testAccessFailed": "仪表盘不可访问。{{error}}"
   },
   "proxy": {
     "editTitle": "编辑代理",

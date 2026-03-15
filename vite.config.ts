@@ -8,6 +8,9 @@ import { fileURLToPath } from 'node:url'
 export default defineConfig({
   define: {
     global: 'globalThis',
+    // Expose environment variables to client code
+    'import.meta.env.FRPC_GUI_MODE': JSON.stringify(process.env.FRPC_GUI_MODE),
+    'import.meta.env.FRPC_CONFIG_PATH': JSON.stringify(process.env.FRPC_CONFIG_PATH),
   },
   plugins: [
     react({

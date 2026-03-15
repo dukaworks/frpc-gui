@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -45,15 +45,15 @@ export function ServerListOverview({
     );
   };
 
-  // Pagination Logic
-  const totalPages = Math.ceil(profiles.length / serverPageSize);
-  
-  if (currentPage > totalPages && totalPages > 0) {
-    setCurrentPage(totalPages);
-  }
+  const effectivePageSize = Math.max(1, serverPageSize);
+  const totalPages = Math.max(1, Math.ceil(profiles.length / effectivePageSize));
 
-  const startIndex = (currentPage - 1) * serverPageSize;
-  const paginatedProfiles = profiles.slice(startIndex, startIndex + serverPageSize);
+  useEffect(() => {
+    setCurrentPage((p) => Math.min(Math.max(1, p), totalPages));
+  }, [totalPages]);
+
+  const startIndex = (currentPage - 1) * effectivePageSize;
+  const paginatedProfiles = profiles.slice(startIndex, startIndex + effectivePageSize);
 
   return (
     <div className="space-y-4">
@@ -155,33 +155,31 @@ export function ServerListOverview({
             </Card>
           </div>
 
-          {totalPages > 1 && (
-            <div className="flex items-center justify-end gap-2 mt-4">
-              <span className="text-sm text-muted-foreground">
-                 {t('common.page')} {currentPage} / {totalPages}
-              </span>
-              <div className="flex items-center gap-1">
-                <Button
-                  variant="outline"
-                  size="icon"
-                  className="h-8 w-8"
-                  onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                  disabled={currentPage === 1}
-                >
-                  <ChevronLeft className="h-4 w-4" />
-                </Button>
-                <Button
-                  variant="outline"
-                  size="icon"
-                  className="h-8 w-8"
-                  onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-                  disabled={currentPage === totalPages}
-                >
-                  <ChevronRight className="h-4 w-4" />
-                </Button>
-              </div>
+          <div className="flex items-center justify-end gap-2 mt-4">
+            <span className="text-sm text-muted-foreground">
+               {t('common.page')} {currentPage} / {totalPages}
+            </span>
+            <div className="flex items-center gap-1">
+              <Button
+                variant="outline"
+                size="icon"
+                className="h-8 w-8"
+                onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                disabled={currentPage === 1}
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="outline"
+                size="icon"
+                className="h-8 w-8"
+                onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                disabled={currentPage === totalPages}
+              >
+                <ChevronRight className="h-4 w-4" />
+              </Button>
             </div>
-          )}
+          </div>
         </div>
       )}
     </div>
