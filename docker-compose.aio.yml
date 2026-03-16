@@ -1,10 +1,31 @@
-version: '3.8'
-
-# All-In-One (AIO) Deployment Example
-# This docker-compose file demonstrates how to run frpc-gui and frpc in the same environment
-# with direct file sharing and webServer API integration
-
 services:
+  frp-init:
+    image: alpine:3.20
+    container_name: frp-init
+    user: "0:0"
+    volumes:
+      - ./frp:/etc/frp
+    entrypoint: ["sh", "-c"]
+    command: |
+      set -e
+      mkdir -p /etc/frp
+      if [ ! -f /etc/frp/frpc.toml ]; then
+        printf '%s\n' \
+          'serverAddr = "127.0.0.1"' \
+          'serverPort = 7000' \
+          '' \
+          '[auth]' \
+          'token = ""' \
+          '' \
+          '[webServer]' \
+          'addr = "0.0.0.0"' \
+          'port = 7400' \
+          'user = "admin"' \
+          'password = "admin"' \
+          > /etc/frp/frpc.toml
+      fi
+    restart: "no"
+
   frpc-gui:
     image: ghcr.io/dukaworks/frpc-gui:latest
     container_name: frpc-gui
@@ -29,28 +50,11 @@ services:
   frpc:
     image: fatedier/frp:latest
     container_name: frpc
-    user: "0:0"
     volumes:
       # Shared volume for configuration file access
       - ./frp:/etc/frp
-    entrypoint: ["sh", "-c"]
-    command: |
-      set -e
-      mkdir -p /etc/frp
-      if [ ! -f /etc/frp/frpc.toml ]; then
-        cat > /etc/frp/frpc.toml << 'EOF'
-      serverAddr = "127.0.0.1"
-      serverPort = 7000
-
-      [auth]
-      token = ""
-
-      [webServer]
-      addr = "0.0.0.0"
-      port = 7400
-      user = "admin"
-      password = "admin"
-      EOF
-      fi
-      exec frpc -c /etc/frp/frpc.toml
+    entrypoint: ["/frpc"]
+    command: ["-c", "/etc/frp/frpc.toml"]
     restart: unless-stopped
+    depends_on:
+      - frp-init
