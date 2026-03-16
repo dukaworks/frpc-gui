@@ -4,30 +4,18 @@ services:
     container_name: frp-init
     user: "0:0"
     volumes:
-      - ./frp:/etc/frp
+      - ./:/work
     command:
       - sh
       - -eux
       - -c
       - >-
-        mkdir -p /etc/frp;
-        if [ ! -f /etc/frp/frpc.toml ]; then
-          printf '%s\n'
-            'serverAddr = "127.0.0.1"'
-            'serverPort = 7000'
-            ''
-            '[auth]'
-            'token = ""'
-            ''
-            '[webServer]'
-            'addr = "0.0.0.0"'
-            'port = 7400'
-            'user = "admin"'
-            'password = "admin"'
-            > /etc/frp/frpc.toml;
+        mkdir -p /work;
+        if [ ! -f /work/frpc.toml ]; then
+          printf '%s\n' 'serverAddr = "127.0.0.1"' 'serverPort = 7000' '' 'loginFailExit = false' '' '[auth]' 'method = "token"' 'token = ""' '' '[webServer]' 'addr = "0.0.0.0"' 'port = 7400' 'user = "admin"' 'password = "admin"' > /work/frpc.toml;
         fi;
-        test -f /etc/frp/frpc.toml;
-        ls -la /etc/frp
+        test -f /work/frpc.toml;
+        ls -la /work
     restart: "no"
 
   frpc-gui:
@@ -40,25 +28,23 @@ services:
       - PORT=3000
       - FRPC_GUI_MODE=local
       # Path to the shared frpc configuration file
-      - FRPC_CONFIG_PATH=/etc/frp/frpc.toml
+      - FRPC_CONFIG_PATH=/etc/frpc.toml
       # Frpc webServer API configuration for reload/status operations
       - FRPC_WEB_SERVER_ADDR=frpc
       - FRPC_WEB_SERVER_PORT=7400
     volumes:
       # Shared volume for configuration file access
-      - ./frp:/etc/frp
+      - ./frpc.toml:/etc/frpc.toml
     restart: unless-stopped
     depends_on:
       - frpc
 
   frpc:
-    image: fatedier/frp:latest
+    image: fatedier/frpc:v0.67.0
     container_name: frpc
     volumes:
-      # Shared volume for configuration file access
-      - ./frp:/etc/frp
-    entrypoint: ["/frpc"]
-    command: ["-c", "/etc/frp/frpc.toml"]
+      - ./frpc.toml:/etc/frpc.toml
+    command: ["-c", "/etc/frpc.toml"]
     restart: unless-stopped
     depends_on:
       frp-init:

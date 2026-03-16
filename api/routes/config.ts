@@ -1,11 +1,27 @@
 import { Router, type NextFunction, type Request, type Response } from 'express';
 import SshService, { sshManager } from '../services/sshService.js';
-import { readFileSync, writeFileSync } from 'fs';
+import { existsSync, readFileSync, writeFileSync } from 'fs';
 
 const router = Router();
 
 type AuthedRequest = Request & { ssh: SshService };
 type LocalAuthedRequest = Request & { localFileService: LocalFileService };
+
+function getLocalConfigPath() {
+  return process.env.FRPC_CONFIG_PATH || '/etc/frpc.toml';
+}
+
+function getLocalProcessInfo() {
+  const configPath = getLocalConfigPath();
+  return {
+    pid: 'local',
+    status: existsSync(configPath) ? 'running' : 'unknown',
+    source: 'docker',
+    serviceName: 'frpc',
+    configPath,
+    command: '',
+  };
+}
 
 // Local file service for local mode operations
 class LocalFileService {
@@ -75,13 +91,11 @@ router.post('/connect', async (req: Request, res: Response) => {
   const isLocalMode = process.env.FRPC_GUI_MODE === 'local';
   
   if (isLocalMode) {
-    // In local mode, we don't need SSH connection
-    // Return a mock session ID and null process info
     const sessionId = Math.random().toString(36).substring(7);
     res.json({ 
       sessionId, 
       status: 'connected',
-      process: null
+      process: getLocalProcessInfo()
     });
     return;
   }
@@ -139,9 +153,7 @@ router.post('/scan', requireAuth, async (req: Request, res: Response) => {
         const isLocalMode = process.env.FRPC_GUI_MODE === 'local';
         
         if (isLocalMode) {
-            // In local mode, we can't scan remote SSH services
-            // Return null to indicate no remote service found
-            res.json({ process: null });
+            res.json({ process: getLocalProcessInfo() });
         } else {
             // Standard SSH mode
             const processInfo = await (req as AuthedRequest).ssh.scanFrpc();
