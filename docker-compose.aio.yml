@@ -7,23 +7,23 @@ services:
       - ./frp:/etc/frp
     entrypoint: ["sh", "-c"]
     command: |
-      set -e
+      set -eu
       mkdir -p /etc/frp
       if [ ! -f /etc/frp/frpc.toml ]; then
-        printf '%s\n' \
-          'serverAddr = "127.0.0.1"' \
-          'serverPort = 7000' \
-          '' \
-          '[auth]' \
-          'token = ""' \
-          '' \
-          '[webServer]' \
-          'addr = "0.0.0.0"' \
-          'port = 7400' \
-          'user = "admin"' \
-          'password = "admin"' \
-          > /etc/frp/frpc.toml
+        printf '%s' 'serverAddr = "127.0.0.1"
+serverPort = 7000
+
+[auth]
+token = ""
+
+[webServer]
+addr = "0.0.0.0"
+port = 7400
+user = "admin"
+password = "admin"
+' > /etc/frp/frpc.toml
       fi
+      test -f /etc/frp/frpc.toml
     restart: "no"
 
   frpc-gui:
@@ -57,4 +57,5 @@ services:
     command: ["-c", "/etc/frp/frpc.toml"]
     restart: unless-stopped
     depends_on:
-      - frp-init
+      frp-init:
+        condition: service_completed_successfully
