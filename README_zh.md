@@ -142,7 +142,30 @@ docker run -d \
 docker compose -f docker-compose.aio.yml up -d
 ```
 
-它使用 `FRPC_GUI_MODE=local` 并通过共享卷管理 `/etc/frp/frpc.toml`。参考：
+它使用 `FRPC_GUI_MODE=local` 并通过共享卷管理 `/etc/frp/frpc.ini`（首次启动如果不存在会自动生成）。
+
+如果你希望在界面里使用“reload/状态检测”等能力（通过 frpc 管理端口调用），需要在 frpc 配置里开启管理端：
+
+INI（常见写法）：
+
+```ini
+[common]
+admin_addr = 0.0.0.0
+admin_port = 7400
+admin_user = admin
+admin_pwd  = admin
+```
+
+TOML（新写法）：
+
+```toml
+webServer.addr = "0.0.0.0"
+webServer.port = 7400
+webServer.user = "admin"
+webServer.password = "admin"
+```
+
+参考：
 
 - [docker-compose.aio.yml](./docker-compose.aio.yml)
 - [.env.local.example](./.env.local.example)
