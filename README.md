@@ -121,6 +121,19 @@ Notes:
 - If you use Frpc-GUI mainly to manage remote frpc via SSH, you don't need to mount any local config file.
 - If you want the container to edit a local `frpc.toml` on the host, mount it (e.g. `/etc/frp/frpc.toml`).
 
+#### Option 3: All-In-One (AIO) with frpc (Local Mode)
+
+If you want to run **frpc-gui + frpc** together in one environment and manage the local config directly, use the AIO compose file:
+
+```bash
+docker compose -f docker-compose.aio.yml up -d
+```
+
+It uses `FRPC_GUI_MODE=local` and a shared volume for `/etc/frp/frpc.toml`. See:
+
+- [docker-compose.aio.yml](./docker-compose.aio.yml)
+- [.env.local.example](./.env.local.example)
+
 ### Development
 
 1.  Clone the repository:

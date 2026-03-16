@@ -93,8 +93,8 @@
 *   **生产环境管理 (Remote Management)**
     *   对于运行在 **PVE、OpenWrt (如 iStoreOS)、飞牛 (fnOS)** 等生产环境中的 frpc，建议将 Frpc-GUI 安装在独立的管理设备（如您的笔记本）上，通过 SSH 远程管理。这种“控制面与数据面分离”的部署方式更符合网络稳健性原则，避免管理工具对生产环境造成不必要的干扰。
 
-*   **未来规划 (Roadmap)**
-    *   我们计划推出 **Frpc + GUI 的 All-In-One Docker 镜像**，实现开箱即用。届时，Frpc-GUI 可作为默认的 Web 管理端直接部署在目标设备上，与 frpc 无缝集成。
+*   **All-In-One (AIO) 部署**
+    *   已支持使用 `docker-compose.aio.yml` 在同一套环境中运行 **frpc + Frpc-GUI**（本地模式），直接管理共享的 `frpc.toml` 配置文件（见下文 Docker 选项 3）。
 
 ## 📦 快速开始
 
@@ -133,6 +133,19 @@ docker run -d \
 说明：
 - 如果你主要用它来“通过 SSH 管理远端 frpc”，不需要挂载任何本地 frpc 配置文件。
 - 如果你希望让容器直接编辑宿主机上的 `frpc.toml`，再挂载配置文件即可（例如挂到 `/etc/frp/frpc.toml`）。
+
+#### 选项 3: 一体化（AIO）部署（frpc + Frpc-GUI，本地模式）
+
+如果你希望在同一套环境中运行 **frpc-gui + frpc**，并直接管理本地配置文件，可以使用仓库内提供的 AIO compose 文件：
+
+```bash
+docker compose -f docker-compose.aio.yml up -d
+```
+
+它使用 `FRPC_GUI_MODE=local` 并通过共享卷管理 `/etc/frp/frpc.toml`。参考：
+
+- [docker-compose.aio.yml](./docker-compose.aio.yml)
+- [.env.local.example](./.env.local.example)
 
 ### 开发与本地运行
 
