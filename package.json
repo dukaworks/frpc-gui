@@ -1,7 +1,7 @@
 {
   "name": "frpc-gui",
   "private": false,
-  "version": "0.2.1",
+  "version": "0.2.2",
   "description": "Web-based GUI for managing Frpc configurations remotely via SSH",
   "license": "MIT",
   "author": {
@@ -43,7 +43,7 @@
         "nsis",
         "zip"
       ],
-      "icon": "dist/favicon.png"
+      "icon": "public/favicon.png"
     },
     "nsis": {
       "oneClick": false,
@@ -54,14 +54,14 @@
     },
     "mac": {
       "target": "dmg",
-      "icon": "dist/favicon.png"
+      "icon": "public/favicon.png"
     },
     "linux": {
       "target": [
         "deb"
       ],
       "maintainer": "DukaWorks <dukaworks@users.noreply.github.com>",
-      "icon": "dist/favicon.png"
+      "icon": "public/favicon.png"
     }
   },
   "dependencies": {
