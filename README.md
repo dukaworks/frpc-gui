@@ -129,28 +129,7 @@ If you want to run **frpc-gui + frpc** together in one environment and manage th
 docker compose -f docker-compose.aio.yml up -d
 ```
 
-It uses `FRPC_GUI_MODE=local` and a shared volume for `/etc/frp/frpc.ini` (created automatically on first run if missing).
-
-To enable `reload/status` checks via frpc's admin API, ensure your frpc config includes an admin server:
-
-INI:
-
-```ini
-[common]
-admin_addr = 0.0.0.0
-admin_port = 7400
-admin_user = admin
-admin_pwd  = admin
-```
-
-TOML:
-
-```toml
-webServer.addr = "0.0.0.0"
-webServer.port = 7400
-webServer.user = "admin"
-webServer.password = "admin"
-```
+On first start it auto-creates `./frp/frpc.toml` (empty template). You then edit it in the UI.
 
 See:
 

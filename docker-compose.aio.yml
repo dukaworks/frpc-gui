@@ -15,13 +15,13 @@ services:
       - PORT=3000
       - FRPC_GUI_MODE=local
       # Path to the shared frpc configuration file
-      - FRPC_CONFIG_PATH=/etc/frp/frpc.ini
+      - FRPC_CONFIG_PATH=/etc/frp/frpc.toml
       # Frpc webServer API configuration for reload/status operations
       - FRPC_WEB_SERVER_ADDR=frpc
       - FRPC_WEB_SERVER_PORT=7400
     volumes:
       # Shared volume for configuration file access
-      - frp-data:/etc/frp
+      - ./frp:/etc/frp
     restart: unless-stopped
     depends_on:
       - frpc
@@ -31,27 +31,21 @@ services:
     container_name: frpc
     volumes:
       # Shared volume for configuration file access
-      - frp-data:/etc/frp
+      - ./frp:/etc/frp
     command:
       - sh
       - -c
       - |
-        if [ ! -f /etc/frp/frpc.ini ]; then
-          cat > /etc/frp/frpc.ini << 'EOF'
-        [common]
-        server_addr = "CHANGE_ME"
-        server_port = 7000
-        token = "CHANGE_ME"
-
-        admin_addr = 0.0.0.0
-        admin_port = 7400
-        admin_user = admin
-        admin_pwd  = admin
+        if [ ! -f /etc/frp/frpc.toml ]; then
+          cat > /etc/frp/frpc.toml << 'EOF'
+        serverAddr = "CHANGE_ME"
+        serverPort = 7000
+        auth.token = "CHANGE_ME"
+        webServer.addr = "0.0.0.0"
+        webServer.port = 7400
+        webServer.user = "admin"
+        webServer.password = "admin"
         EOF
         fi
-        exec frpc -c /etc/frp/frpc.ini
+        exec frpc -c /etc/frp/frpc.toml
     restart: unless-stopped
-
-volumes:
-  # Shared volume for frpc configuration
-  frp-data:
