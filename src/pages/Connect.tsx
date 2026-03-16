@@ -102,11 +102,23 @@ export default function Connect() {
        return;
     }
 
+    setLoading(true);
+    setError('');
+    ApiClient.connect({ host: '', port: 0, username: '' })
+      .then((res) => {
+        setConnected(res.sessionId, res.process);
+        navigate('/dashboard');
+      })
+      .catch(() => {
+        void 0;
+      })
+      .finally(() => {
+        setLoading(false);
+      });
+
     const existing = ApiClient.getSessionId();
     if (!existing) return;
 
-    setLoading(true);
-    setError('');
     ApiClient.scan()
       .then((res) => {
         setConnected(existing, res.process ?? null);

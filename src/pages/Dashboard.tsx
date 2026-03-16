@@ -90,7 +90,7 @@ export default function Dashboard() {
   const [serviceLoading, setServiceLoading] = useState(false);
   const [scanLoading, setScanLoading] = useState(false);
   const [manualMode, setManualMode] = useState(false);
-  const [manualConfigPath, setManualConfigPath] = useState('/etc/frp/frpc.toml');
+  const [manualConfigPath, setManualConfigPath] = useState('/etc/frpc.toml');
   const [manualLoading, setManualLoading] = useState(false);
   
   // Feedback Dialog State
