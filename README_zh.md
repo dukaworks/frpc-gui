@@ -142,7 +142,7 @@ docker run -d \
 docker compose -f docker-compose.aio.yml up -d
 ```
 
-首次启动会自动生成 `./frp/frpc.toml`（空白模板），然后你就可以在界面里直接编辑。
+首次启动会自动生成 `./frp/frpc.toml`（初始模板），然后你就可以在界面里直接编辑。
 
 参考：
 

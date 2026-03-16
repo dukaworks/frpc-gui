@@ -38,9 +38,8 @@ services:
       - |
         if [ ! -f /etc/frp/frpc.toml ]; then
           cat > /etc/frp/frpc.toml << 'EOF'
-        serverAddr = "CHANGE_ME"
+        serverAddr = "127.0.0.1"
         serverPort = 7000
-        auth.token = "CHANGE_ME"
         webServer.addr = "0.0.0.0"
         webServer.port = 7400
         webServer.user = "admin"

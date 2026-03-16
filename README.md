@@ -129,7 +129,7 @@ If you want to run **frpc-gui + frpc** together in one environment and manage th
 docker compose -f docker-compose.aio.yml up -d
 ```
 
-On first start it auto-creates `./frp/frpc.toml` (empty template). You then edit it in the UI.
+On first start it auto-creates `./frp/frpc.toml` (a starter template). You then edit it in the UI.
 
 See:
 
