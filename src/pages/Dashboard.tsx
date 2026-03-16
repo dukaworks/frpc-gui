@@ -10,18 +10,15 @@ import { Loader2, Terminal, FileText, Activity, Server, Edit3, ArrowLeft, Layout
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ConfigEditor } from '@/components/ConfigEditor';
 import { ProxyListOverview } from '@/components/ConfigEditor/ProxyListOverview';
-import { ServerListOverview } from '@/components/ConfigEditor/ServerListOverview';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { useFrpcConfig } from '@/hooks/useFrpcConfig';
 import { ProxyEditDialog } from '@/components/ConfigEditor/ProxyEditDialog';
 import { SshEditDialog } from '@/components/ConfigEditor/SshEditDialog';
-import { ServerEditDialog } from '@/components/ConfigEditor/ServerEditDialog';
-import { ProxyConfig, SSHConfig, ServerProfile } from '@/shared/types';
+import { ProxyConfig, SSHConfig } from '@/shared/types';
 import { useTranslation } from 'react-i18next';
 import { useSettingsStore } from '@/store/settingsStore';
-import { useServerProfileStore } from '@/store/serverProfileStore';
 import { SettingsDialog } from '@/components/SettingsDialog';
 import {
   AlertDialog,
@@ -80,7 +77,6 @@ function UptimeDisplay({ startTimestamp }: { startTimestamp: number }) {
 export default function Dashboard() {
   const { t } = useTranslation();
   const { frpsDashboardUrl, serverPageSize } = useSettingsStore();
-  const { profiles: serverProfiles, saveProfile: saveServerProfile, removeProfile: removeServerProfile } = useServerProfileStore();
   const [settingsOpen, setSettingsOpen] = useState(false);
   const navigate = useNavigate();
   const { isConnected, processInfo, disconnect, setProcessInfo, restartRequired, setRestartRequired } = useFrpcStore();
@@ -180,14 +176,11 @@ export default function Dashboard() {
     updateProxy: hookUpdateProxy, 
     deleteProxy: hookDeleteProxy,
     importProxies: hookImportProxies,
-    updateCommon,
     generateToml 
   } = useFrpcConfig(configContent);
 
   const [sshEditDialogOpen, setSshEditDialogOpen] = useState(false);
   const [editingSshProfile, setEditingSshProfile] = useState<SSHConfig | null>(null);
-  const [serverEditDialogOpen, setServerEditDialogOpen] = useState(false);
-  const [editingServerProfile, setEditingServerProfile] = useState<ServerProfile | null>(null);
 
   const handleAddSshConnection = () => {
     setEditingSshProfile(null);
@@ -230,8 +223,6 @@ export default function Dashboard() {
       if (id.startsWith('ssh_')) {
         const sshId = id.replace('ssh_', '');
         removeConnection(sshId);
-      } else {
-        removeServerProfile(id);
       }
       setServerDeleteDialogOpen(false);
       setServerToDelete(null);
@@ -856,10 +847,6 @@ export default function Dashboard() {
                           <LayoutGrid className="h-4 w-4 mr-2" />
                           {t('dashboard.proxies')}
                       </TabsTrigger>
-                      <TabsTrigger value="servers">
-                          <Server className="h-4 w-4 mr-2" />
-                          {t('dashboard.serverList')}
-                      </TabsTrigger>
                       <TabsTrigger value="edit">
                           <Settings className="h-4 w-4 mr-2" />
                           {t('dashboard.configEditor')}
@@ -959,53 +946,6 @@ export default function Dashboard() {
                     </div>
                 </TabsContent>
 
-                <TabsContent value="servers" className="mt-0">
-                  <div className="space-y-6">
-                    <div className="flex items-center justify-end">
-                      <Button size="sm" className="h-8" onClick={() => {
-                        setEditingSshProfile(null);
-                        setSshEditDialogOpen(false);
-                        setEditingProxy(null);
-                        setEditDialogOpen(false);
-                        setEditingServerProfile(null);
-                        setServerEditDialogOpen(true);
-                      }}>
-                        <Plus className="h-3.5 w-3.5 mr-1" />
-                        {t('dashboard.addServer')}
-                      </Button>
-                    </div>
-
-                    <ServerListOverview
-                      profiles={serverProfiles}
-                      activeConfig={commonConfig}
-                      onAdd={() => {
-                        setEditingServerProfile(null);
-                        setServerEditDialogOpen(true);
-                      }}
-                      onEdit={(profile) => {
-                        setEditingServerProfile(profile);
-                        setServerEditDialogOpen(true);
-                      }}
-                      onDelete={(id) => handleDeleteServer(id)}
-                      onApply={async (profile) => {
-                        updateCommon({
-                          serverAddr: profile.serverAddr,
-                          serverPort: profile.serverPort,
-                          token: profile.token,
-                        });
-                        try {
-                          await saveToDisk();
-                          setRestartRequired(true);
-                          showFeedback('success', t('common.savedRestarting'));
-                        } catch (e: unknown) {
-                          const message = e instanceof Error ? e.message : String(e);
-                          showFeedback('error', message);
-                        }
-                      }}
-                    />
-                  </div>
-                </TabsContent>
-
                 <TabsContent value="ssh" className="mt-0">
                   <div className="space-y-6">
                     <div className="flex items-center justify-end">
@@ -1084,13 +1024,6 @@ export default function Dashboard() {
         onOpenChange={setSshEditDialogOpen}
         initialData={editingSshProfile}
         onSave={handleSaveSshConnection}
-      />
-
-      <ServerEditDialog
-        open={serverEditDialogOpen}
-        onOpenChange={setServerEditDialogOpen}
-        initialData={editingServerProfile}
-        onSave={(data) => saveServerProfile(data)}
       />
 
           <AlertDialog open={feedbackOpen} onOpenChange={setFeedbackOpen}>
