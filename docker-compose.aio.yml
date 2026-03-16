@@ -29,22 +29,28 @@ services:
   frpc:
     image: fatedier/frp:latest
     container_name: frpc
+    user: "0:0"
     volumes:
       # Shared volume for configuration file access
       - ./frp:/etc/frp
-    command:
-      - sh
-      - -c
-      - |
-        if [ ! -f /etc/frp/frpc.toml ]; then
-          cat > /etc/frp/frpc.toml << 'EOF'
-        serverAddr = "127.0.0.1"
-        serverPort = 7000
-        webServer.addr = "0.0.0.0"
-        webServer.port = 7400
-        webServer.user = "admin"
-        webServer.password = "admin"
-        EOF
-        fi
-        exec frpc -c /etc/frp/frpc.toml
+    entrypoint: ["sh", "-c"]
+    command: |
+      set -e
+      mkdir -p /etc/frp
+      if [ ! -f /etc/frp/frpc.toml ]; then
+        cat > /etc/frp/frpc.toml << 'EOF'
+      serverAddr = "127.0.0.1"
+      serverPort = 7000
+
+      [auth]
+      token = ""
+
+      [webServer]
+      addr = "0.0.0.0"
+      port = 7400
+      user = "admin"
+      password = "admin"
+      EOF
+      fi
+      exec frpc -c /etc/frp/frpc.toml
     restart: unless-stopped
