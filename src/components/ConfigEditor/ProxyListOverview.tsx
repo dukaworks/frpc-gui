@@ -27,9 +27,38 @@ interface ProxyListOverviewProps {
   logs?: string;
 }
 
+// Get all proxy names that have recent errors
+function getErrorProxyNames(logs?: string): Set<string> {
+  const errorNames = new Set<string>();
+  if (!logs) return errorNames;
+  
+  // Extract proxy names from error logs
+  // Format: [E] [file.go:line] [runId] ["proxyName"] or [proxyName] connect to local service
+  // The proxy name is the 3rd bracketed item after [E]
+  const errorLineRegex = /\[E\]\s*\[[^\]]+\]\s*\[[^\]]+\]\s*\[(?:"([^"\]]+)"|([^\]]+))\]/g;
+  
+  let match;
+  while ((match = errorLineRegex.exec(logs)) !== null) {
+    const name = match[1] || match[2];
+    if (name) {
+      errorNames.add(name);
+    }
+  }
+  
+  return errorNames;
+}
+
 function getProxyStatus(proxy: ProxyConfig, logs?: string): 'online' | 'error' {
-  void proxy;
-  void logs;
+  if (!logs) return 'online';
+  
+  // Get proxy names with recent errors (last 100 lines)
+  const recentLogs = logs.split('\n').slice(-100).join('\n');
+  const errorNames = getErrorProxyNames(recentLogs);
+  
+  if (errorNames.has(proxy.name)) {
+    return 'error';
+  }
+  
   return 'online';
 }
 
@@ -137,7 +166,10 @@ export function ProxyListOverview({
                   <div className="flex items-center gap-2">
                     <div className="flex items-center gap-2">
                       {status === 'online' && (
-                        <Badge className="bg-green-500 hover:bg-green-600 border-none h-2 w-2 p-0 rounded-full" title={t('common.ok')} />
+                        <Badge className="bg-green-500 hover:bg-green-600 border-none h-2 w-2 p-0 rounded-full" title={t('dashboard.online')} />
+                      )}
+                      {status === 'error' && (
+                        <Badge className="bg-red-500 hover:bg-red-600 border-none h-2 w-2 p-0 rounded-full animate-pulse" title={t('dashboard.offline')} />
                       )}
                       <h3 className="font-semibold text-sm truncate max-w-[120px]" title={p.name}>{p.name}</h3>
                     </div>

@@ -103,7 +103,14 @@
     "days": "天",
     "noServerProfiles": "没有服务器配置",
     "noServerProfilesDesc": "创建服务器配置以便在不同的 FRPS 服务器之间快速切换。",
-    "addNewProfile": "添加新配置"
+    "addNewProfile": "添加新配置",
+    "frpcClient": "FRPC 客户端",
+    "frpsServer": "FRPS 服务器",
+    "status": "状态",
+    "uptime": "运行时长",
+    "auth": "认证",
+    "openFrpsDashboard": "打开面板",
+    "frpsAddress": "FRPS 服务器地址"
   },
   "settings": {
     "general": "常规",

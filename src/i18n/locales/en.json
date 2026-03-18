@@ -103,7 +103,14 @@
     "days": "days",
     "noServerProfiles": "No Server Profiles",
     "noServerProfilesDesc": "Create server profiles to quickly switch between different FRPS servers.",
-    "addNewProfile": "Add New Profile"
+    "addNewProfile": "Add New Profile",
+    "frpcClient": "FRPC Client",
+    "frpsServer": "FRPS Server",
+    "status": "Status",
+    "uptime": "Uptime",
+    "auth": "Auth",
+    "openFrpsDashboard": "Open Dashboard",
+    "frpsAddress": "FRPS Server Address"
   },
   "settings": {
     "general": "General",

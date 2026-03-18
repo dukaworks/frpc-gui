@@ -105,26 +105,14 @@ export default function Dashboard() {
   const [logsLoading, setLogsLoading] = useState(false);
   const [statusLogs, setStatusLogs] = useState<string>('');
   
+  // Clean ANSI escape sequences from logs (e.g., docker logs with colors)
   const cleanAnsi = (raw: string) => {
-    const esc = '\u001b';
-    const csi = '\u009b';
-    let out = '';
-
-    for (let i = 0; i < raw.length; i += 1) {
-      const ch = raw[i];
-      if (ch === esc || ch === csi) {
-        i += 1;
-        while (i < raw.length) {
-          const code = raw.charCodeAt(i);
-          if (code >= 0x40 && code <= 0x7e) break;
-          i += 1;
-        }
-        continue;
-      }
-      out += ch;
-    }
-
-    return out;
+    // ANSI escape sequence pattern: ESC [ ... (letters/numbers) letter
+    // Example: \u001b[0m, \u001b[1;31m, \u001b[31m, \u001b[0;1;31m
+    // Using String.fromCharCode(27) to avoid control-regex lint error
+    const esc = String.fromCharCode(27);
+    const ansiPattern = new RegExp(`${esc}\\[[0-9;]*[a-zA-Z]`, 'g');
+    return raw.replace(ansiPattern, '');
   };
 
   const fetchLogs = async () => {
@@ -135,10 +123,11 @@ export default function Dashboard() {
     try {
       const [recentRes, statusRes] = await Promise.all([
         ApiClient.fetchLogs(processInfo.source, processInfo.serviceName, { lines: 80 }),
-        ApiClient.fetchLogs(processInfo.source, processInfo.serviceName, { lines: 2000, sinceHours: 2 })
+        ApiClient.fetchLogs(processInfo.source, processInfo.serviceName, { lines: 5000, sinceHours: 24 })
       ]);
       const cleanLogs = cleanAnsi(recentRes.logs || '');
       const cleanStatusLogs = cleanAnsi(statusRes.logs || '');
+      
       setLogs(cleanLogs || t('dashboard.noLogsAvailable'));
       setStatusLogs(cleanStatusLogs);
     } catch (e: unknown) {
@@ -675,88 +664,107 @@ export default function Dashboard() {
       <div className="container py-6 space-y-6">
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {/* Card 1: Health & Uptime */}
+        {/* Card 1: FRPC Client Status */}
         <Card className="flex flex-col h-64">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">{t('dashboard.serviceHealth')}</CardTitle>
-            <div className={`flex items-center gap-2`}>
-                <span className="text-xs text-muted-foreground font-mono">{processInfo?.version ? `v${processInfo.version}` : ''}</span>
-                <div className={`h-2.5 w-2.5 rounded-full ${processInfo?.status === 'running' ? 'bg-green-500 animate-pulse' : 'bg-red-500'}`} />
+            <CardTitle className="text-sm font-medium flex items-center gap-2">
+              <Activity className="h-4 w-4 text-purple-500" />
+              {t('dashboard.frpcClient')}
+            </CardTitle>
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-muted-foreground font-mono">{processInfo?.version ? `v${processInfo.version}` : ''}</span>
+              <div className={`h-2.5 w-2.5 rounded-full ${processInfo?.status === 'running' ? 'bg-green-500 animate-pulse' : 'bg-red-500'}`} />
             </div>
           </CardHeader>
           <CardContent className="flex-1 flex flex-col justify-center">
-             <div className="space-y-4">
-                <div>
-                    <div className="text-3xl font-bold text-foreground capitalize">
+             <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                    <span className="text-muted-foreground text-xs">{t('dashboard.status')}</span>
+                    <span className={`text-sm font-medium capitalize ${
+                      processInfo?.status === 'running' ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'
+                    }`}>
                         {processInfo?.status || t('dashboard.unknown')}
-                    </div>
-                    <p className="text-xs text-muted-foreground mt-1">
-                        {t('dashboard.currentStatus')}
-                    </p>
+                    </span>
                 </div>
                 
-                <div className="pt-4 border-t">
-                    <div className="flex items-center gap-2 text-sm font-medium text-foreground">
-                        <Activity className="h-4 w-4 text-muted-foreground shrink-0" />
+                <div className="flex items-center justify-between">
+                    <span className="text-muted-foreground text-xs">{t('dashboard.uptime')}</span>
+                    <span className="text-sm font-medium truncate max-w-[160px]" title={processInfo?.uptime}>
                         {processInfo?.startTimestamp ? (
                             <UptimeDisplay startTimestamp={processInfo.startTimestamp} />
                         ) : (
-                            <span className="truncate">{processInfo?.uptime || 'N/A'}</span>
+                            processInfo?.uptime || 'N/A'
                         )}
+                    </span>
+                </div>
+
+                <div className="flex items-center justify-between">
+                    <span className="text-muted-foreground text-xs">Source</span>
+                    <Badge variant="outline" className="text-[10px] h-5 font-normal">
+                        {processInfo?.source === 'docker' ? 'Docker' : 
+                         processInfo?.source === 'systemd' ? 'Systemd' : 
+                         processInfo?.source === 'process' ? 'Process' : 'Unknown'}
+                    </Badge>
+                </div>
+
+                <div className="pt-2 border-t space-y-1">
+                    <div className="flex items-center justify-between">
+                        <span className="text-muted-foreground text-xs">Config</span>
+                        <span className="font-mono text-[10px] bg-muted px-1.5 py-0.5 rounded truncate max-w-[160px]" title={processInfo?.configPath}>
+                            {processInfo?.configPath ? processInfo.configPath.split('/').pop() : t('dashboard.unknown')}
+                        </span>
                     </div>
-                    <p className="text-xs text-muted-foreground mt-1 pl-6">
-                        {t('dashboard.uptimeSince')}
-                    </p>
                 </div>
              </div>
           </CardContent>
         </Card>
 
-        {/* Card 2: Connection Topology */}
+        {/* Card 2: FRPS Server Connection */}
         <Card className="flex flex-col h-64">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">{t('dashboard.connectionInfo')}</CardTitle>
-            {frpsDashboardUrl ? (
+            <CardTitle className="text-sm font-medium flex items-center gap-2">
+              <Globe className="h-4 w-4 text-blue-500" />
+              {t('dashboard.frpsServer')}
+            </CardTitle>
+            {frpsDashboardUrl && (
               <Button 
                 variant="ghost" 
-                size="icon" 
+                size="icon"
                 className="h-6 w-6 text-muted-foreground hover:text-primary cursor-pointer" 
                 onClick={() => openExternalUrl(frpsDashboardUrl)}
-                title={t('dashboard.frpsAdmin')}
+                title={t('dashboard.openFrpsDashboard')}
               >
-                <Globe className="h-4 w-4" />
+                <BarChart className="h-4 w-4" />
               </Button>
-            ) : (
-              <Globe className="h-4 w-4 text-muted-foreground/50" />
             )}
           </CardHeader>
           <CardContent className="flex-1 flex flex-col justify-center">
-             <div className="space-y-4">
+             <div className="space-y-3">
                 <div>
                     <div className="text-2xl font-bold text-foreground break-all">
                         {commonConfig.serverAddr || '127.0.0.1'}
                         <span className="text-lg text-muted-foreground font-normal">:{commonConfig.serverPort || 7000}</span>
                     </div>
                     <p className="text-xs text-muted-foreground mt-1">
-                        {t('dashboard.activeServerAddress')}
+                        {t('dashboard.frpsAddress')}
                     </p>
                 </div>
 
-                <div className="pt-4 border-t space-y-3">
+                <div className="pt-3 border-t space-y-2">
                     <div className="flex items-center justify-between text-sm">
-                        <span className="text-muted-foreground flex items-center gap-2">
-                            <Lock className="h-3 w-3" /> {t('dashboard.token')}
+                        <span className="text-muted-foreground flex items-center gap-2 text-xs">
+                            <Lock className="h-3 w-3" /> {t('dashboard.auth')}
                         </span>
-                        <span className="font-mono bg-muted px-1.5 py-0.5 rounded text-xs">
-                            {commonConfig.token ? '******' : 'None'}
+                        <span className={`font-medium text-xs ${commonConfig.token ? 'text-green-600 dark:text-green-400' : 'text-muted-foreground'}`}>
+                            {commonConfig.token ? 'Token' : 'None'}
                         </span>
                     </div>
                     <div className="flex items-center justify-between text-sm">
-                        <span className="text-muted-foreground flex items-center gap-2">
-                            <FileText className="h-3 w-3" /> {t('dashboard.config')}
+                        <span className="text-muted-foreground flex items-center gap-2 text-xs">
+                            <Activity className="h-3 w-3" /> Protocol
                         </span>
-                        <span className="font-mono text-xs truncate max-w-[150px]" title={processInfo?.configPath}>
-                            {processInfo?.configPath ? processInfo.configPath.split('/').pop() : t('dashboard.unknown')}
+                        <span className="font-medium text-xs">
+                            TCP
                         </span>
                     </div>
                 </div>
@@ -783,33 +791,39 @@ export default function Dashboard() {
                          {t('dashboard.fetchingLogs')}
                      </div>
                  ) : (
-                     <div className="space-y-1">
-                         {logs ? logs.split('\n').filter(line => line.trim()).map((line, i) => {
-                             // Highlight errors - Changed to Purple-400 for errors to match theme
-                             const isError = line.includes('[E]') || line.toLowerCase().includes('error');
-                             
-                             // Convert UTC timestamp to local time if present
-                             // Matches format: 2024/03/10 12:00:00 [I] ...
-                             const timestampRegex = /^(\d{4}\/\d{2}\/\d{2} \d{2}:\d{2}:\d{2})/;
-                             const match = line.match(timestampRegex);
-                             
-                             let displayLine = line;
-                             if (match) {
-                               const utcTimeStr = match[1];
-                               // Treat as UTC by appending 'Z'
-                               const utcDate = new Date(utcTimeStr.replace(/\//g, '-') + 'Z');
-                               if (!isNaN(utcDate.getTime())) {
-                                 const localTimeStr = utcDate.toLocaleString();
-                                 displayLine = line.replace(utcTimeStr, localTimeStr);
+                       <div className="space-y-1">
+                           {logs ? logs.split('\n').filter(line => line.trim()).map((line, i) => {
+                               // Highlight errors - Changed to Purple-400 for errors to match theme
+                               const isError = line.includes('[E]') || line.toLowerCase().includes('error');
+                               
+                               // Convert UTC timestamp to local time if present
+                               // Matches format: 2026-03-18 08:46:42.257 [E] ...
+                               const timestampRegex = /^(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\.\d{3})/;
+                               const match = line.match(timestampRegex);
+                               
+                               let displayLine = line;
+                               if (match) {
+                                 const utcTimeStr = match[1];
+                                 // Parse as UTC by extracting components
+                                 const [datePart, timePart] = utcTimeStr.split(' ');
+                                 const [year, month, day] = datePart.split('-');
+                                 const [hour, minute, secondWithMs] = timePart.split(':');
+                                 const second = secondWithMs.split('.')[0];
+                                 // Create ISO string with Z suffix to force UTC parsing
+                                 const isoStr = `${year}-${month}-${day}T${hour}:${minute}:${second}Z`;
+                                 const utcDate = new Date(isoStr);
+                                 if (!isNaN(utcDate.getTime())) {
+                                   const localTimeStr = utcDate.toLocaleString();
+                                   displayLine = line.replace(utcTimeStr, localTimeStr);
+                                 }
                                }
-                             }
 
-                             return (
-                                 <div key={i} className={`whitespace-pre-wrap break-all leading-tight py-0.5 border-b border-white/5 pb-1 ${isError ? 'text-purple-400' : 'text-slate-300'}`}>
-                                     {displayLine}
-                                 </div>
-                             );
-                         }) : (
+                               return (
+                                   <div key={i} className={`whitespace-pre-wrap break-all leading-tight py-0.5 border-b border-white/5 pb-1 ${isError ? 'text-purple-400' : 'text-slate-300'}`}>
+                                       {displayLine}
+                                   </div>
+                               );
+                           }) : (
                              <div className="text-slate-500 italic">{t('dashboard.noLogsAvailable')}</div>
                          )}
                      </div>
