@@ -73,7 +73,8 @@ class LocalServiceManager {
   private hasSudo: boolean;
 
   constructor() {
-    this.hasSudo = checkSudo();
+    // Don't check sudo — we use docker socket, not sudo docker
+    this.hasSudo = false;
   }
 
   /**
@@ -173,13 +174,15 @@ class LocalServiceManager {
     try {
       if (!(await isDockerAvailable())) return null;
 
-      const dockerCmd = this.hasSudo ? 'sudo docker' : 'docker';
+      const dockerCmd = 'docker';
 
       // List all containers in JSON format (avoids needing grep in Alpine)
-      const psOutput = await localExec(
-        `${dockerCmd} ps -a --format '{{json .}}'`,
-        false
-      );
+      let psOutput: string;
+      try {
+        psOutput = await localExec(`${dockerCmd} ps -a --format '{{json .}}'`, false);
+      } catch (e) {
+        return null;
+      }
 
       if (!psOutput.trim()) return null;
 
@@ -193,17 +196,22 @@ class LocalServiceManager {
           const image = c.Image || '';
           const state = c.State?.toLowerCase() || c.Status?.toLowerCase() || '';
 
-          // Match frpc containers (case-insensitive name match)
+          // Match frpc containers, but exclude ourselves (frpc-gui)
           if (
-            name.toLowerCase().includes('frpc') ||
-            image.toLowerCase().includes('frpc') ||
-            image.toLowerCase().includes('fatedier/frp')
+            // Skip frpc-gui itself
+            name === 'frpc-gui' ||
+            // Match actual frpc containers
+            !(name.toLowerCase().includes('frpc') ||
+              image.toLowerCase().includes('frpc') ||
+              image.toLowerCase().includes('fatedier/frp'))
           ) {
-            if (!targetContainer || state === 'running') {
-              targetContainer = c;
-            }
-            if (state === 'running') break;
+            continue;
           }
+
+          if (!targetContainer || state === 'running') {
+            targetContainer = c;
+          }
+          if (state === 'running') break;
         } catch {
           // Skip malformed JSON lines
         }

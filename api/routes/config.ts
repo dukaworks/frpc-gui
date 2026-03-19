@@ -6,7 +6,6 @@ import { readFileSync, writeFileSync } from 'fs';
 const router = Router();
 
 type AuthedRequest = Request & { ssh: SshService };
-type LocalAuthedRequest = Request & { localFileService: LocalFileService };
 
 function getLocalConfigPath() {
   return process.env.FRPC_CONFIG_PATH || '/etc/frp/frpc.toml';
@@ -43,9 +42,6 @@ const requireAuth = (req: Request, res: Response, next: NextFunction) => {
   const isLocalMode = process.env.FRPC_GUI_MODE === 'local';
   
   if (isLocalMode) {
-    // In local mode, we don't need SSH session
-    // But we still attach a local file service for file operations
-    (req as LocalAuthedRequest).localFileService = localFileService;
     next();
     return;
   }
@@ -142,7 +138,9 @@ router.post('/scan', requireAuth, async (req: Request, res: Response) => {
         const isLocalMode = process.env.FRPC_GUI_MODE === 'local';
         
         if (isLocalMode) {
-            res.json({ process: await localServiceManager.scanFrpc() });
+            const result = await localServiceManager.scanFrpc();
+            res.json({ process: result });
+            return;
         } else {
             // Standard SSH mode
             const processInfo = await (req as AuthedRequest).ssh.scanFrpc();
@@ -164,7 +162,7 @@ router.get('/config', requireAuth, async (req: Request, res: Response) => {
     
     if (isLocalMode) {
       // In local mode, read file directly
-      const content = await (req as LocalAuthedRequest).localFileService.readFile(path);
+      const content = readFileSync(path, 'utf8');
       res.json({ content, format: 'text' });
     } else {
       // Standard SSH mode
@@ -189,7 +187,7 @@ router.post('/config', requireAuth, async (req: Request, res: Response) => {
     
     if (isLocalMode) {
       // In local mode, write file directly
-      await (req as LocalAuthedRequest).localFileService.writeFile(path, content);
+      writeFileSync(path, content, 'utf8');
       res.json({ success: true });
     } else {
       // Standard SSH mode
