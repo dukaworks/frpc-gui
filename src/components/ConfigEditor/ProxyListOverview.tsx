@@ -31,20 +31,24 @@ interface ProxyListOverviewProps {
 function getErrorProxyNames(logs?: string): Set<string> {
   const errorNames = new Set<string>();
   if (!logs) return errorNames;
-  
+
   // Extract proxy names from error logs
-  // Format: [E] [file.go:line] [runId] ["proxyName"] or [proxyName] connect to local service
-  // The proxy name is the 3rd bracketed item after [E]
-  const errorLineRegex = /\[E\]\s*\[[^\]]+\]\s*\[[^\]]+\]\s*\[(?:"([^"\]]+)"|([^\]]+))\]/g;
-  
+  // Real frpc formats:
+  //   [E] [control.go:123] [runId] [ssh] start error: ...
+  //   [E] [file.go:line]   [runId] proxy [name]: error ...
+  //   [E] [file.go:line]   [runId] [ssh] start proxy success  (also uses brackets)
+  // Proxy names in brackets (not in "connect to local service [IP:Port]")
+  // We capture [proxyName] that is NOT preceded by "connect to local service"
+  const errorLineRegex = /\[E\]\s*\[[^\]]+\]\s*\[[^\]]+\]\s+(?:proxy\s+)?\[([^\]]+)\](?!\s*connect\s+to\s+local)/gi;
+
   let match;
   while ((match = errorLineRegex.exec(logs)) !== null) {
-    const name = match[1] || match[2];
-    if (name) {
+    const name = match[1];
+    if (name && name !== 'proxy') {
       errorNames.add(name);
     }
   }
-  
+
   return errorNames;
 }
 

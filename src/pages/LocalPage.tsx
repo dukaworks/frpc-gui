@@ -441,7 +441,7 @@ export default function LocalPage() {
                   onEdit={handleEditProxy}
                   onDelete={(n) => { setProxyToDelete(n); setDeleteDialogOpen(true); }}
                   onAdd={handleAddProxy}
-                  logs=""
+                  logs={logs}
                 />
               </div>
             </TabsContent>

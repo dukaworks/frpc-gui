@@ -39,3 +39,4 @@ release-artifacts2*/
 
 # Local-only project documents
 project_docs/
+node_modules/.tmp/
