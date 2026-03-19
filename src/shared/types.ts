@@ -100,7 +100,7 @@ export interface FrpsProxyBase {
   type: string;
   conf: Record<string, unknown>;
   startTime: number;
-  online: boolean;
+  online: 'online' | 'offline' | boolean; // v0.65 uses bool, v0.67+ uses 'online'/'offline'
   plugin?: string;
 }
 

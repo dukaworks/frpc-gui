@@ -434,42 +434,55 @@ export default function FrpsOverview() {
                 ) : (
                   <div className="space-y-2">
                     <div className="grid grid-cols-12 gap-2 text-xs text-muted-foreground font-medium px-2">
-                      <div className="col-span-2">{t('frpsOverview.proxyName')}</div>
+                      <div className="col-span-3">{t('frpsOverview.proxyName')}</div>
                       <div className="col-span-1">{t('frpsOverview.type')}</div>
                       <div className="col-span-2">{t('frpsOverview.status')}</div>
-                      <div className="col-span-7">{t('frpsOverview.config')}</div>
+                      <div className="col-span-1">{t('frpsOverview.connections')}</div>
+                      <div className="col-span-2">{t('frpsOverview.trafficIn')}</div>
+                      <div className="col-span-3">{t('frpsOverview.trafficOut')}</div>
                     </div>
-                    {Object.values(proxies).map((proxy) => (
-                      <div
-                        key={proxy.name}
-                        className="grid grid-cols-12 gap-2 items-center text-sm px-2 py-2 rounded-md hover:bg-muted/50 transition-colors"
-                      >
-                        <div className="col-span-2 font-mono text-xs truncate" title={proxy.name}>
-                          {proxy.name}
+                    {Object.values(proxies).map((proxy) => {
+                      const conns = (proxy.conf as Record<string, unknown>)?.curConns as number | undefined
+                      const trafficIn = (proxy.conf as Record<string, unknown>)?.totalTrafficIn as number | undefined
+                      const trafficOut = (proxy.conf as Record<string, unknown>)?.totalTrafficOut as number | undefined
+                      return (
+                        <div
+                          key={proxy.name}
+                          className="grid grid-cols-12 gap-2 items-center text-sm px-2 py-2 rounded-md hover:bg-muted/50 transition-colors"
+                        >
+                          <div className="col-span-3 font-medium text-xs truncate" title={proxy.name}>
+                            {proxy.name}
+                          </div>
+                          <div className="col-span-1">
+                            <Badge variant="outline" className="text-xs uppercase">
+                              {proxy.type}
+                            </Badge>
+                          </div>
+                          <div className="col-span-2">
+                            {(proxy.online === 'online' || proxy.online === true) ? (
+                              <span className="flex items-center gap-1 text-green-600 dark:text-green-400 text-xs">
+                                <Wifi className="h-3 w-3" />
+                                {t('frpsOverview.online')}
+                              </span>
+                            ) : (
+                              <span className="flex items-center gap-1 text-muted-foreground text-xs">
+                                <WifiOff className="h-3 w-3" />
+                                {t('frpsOverview.offline')}
+                              </span>
+                            )}
+                          </div>
+                          <div className="col-span-1 text-xs text-muted-foreground">
+                            {conns ?? '—'}
+                          </div>
+                          <div className="col-span-2 text-xs text-muted-foreground font-mono truncate">
+                            {trafficIn !== undefined ? formatBytes(trafficIn) : '—'}
+                          </div>
+                          <div className="col-span-3 text-xs text-muted-foreground font-mono truncate">
+                            {trafficOut !== undefined ? formatBytes(trafficOut) : '—'}
+                          </div>
                         </div>
-                        <div className="col-span-1">
-                          <Badge variant="outline" className="text-xs uppercase">
-                            {proxy.type}
-                          </Badge>
-                        </div>
-                        <div className="col-span-2">
-                          {proxy.online ? (
-                            <span className="flex items-center gap-1 text-green-600 dark:text-green-400 text-xs">
-                              <Wifi className="h-3 w-3" />
-                              {t('frpsOverview.online')}
-                            </span>
-                          ) : (
-                            <span className="flex items-center gap-1 text-muted-foreground text-xs">
-                              <WifiOff className="h-3 w-3" />
-                              {t('frpsOverview.offline')}
-                            </span>
-                          )}
-                        </div>
-                        <div className="col-span-7 text-xs text-muted-foreground font-mono truncate">
-                          {Object.entries(proxy.conf || {}).map(([k, v]) => `${k}=${v}`).join(' | ') || '—'}
-                        </div>
-                      </div>
-                    ))}
+                      )
+                    })}
                   </div>
                 )}
               </CardContent>
