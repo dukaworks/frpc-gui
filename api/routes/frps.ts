@@ -70,6 +70,9 @@ async function proxyFrps(
     }
 
     const text = await response.text()
+    if (path.includes('proxy')) {
+      console.log('[frps] proxy response body:', text.slice(0, 500))
+    }
     let data: unknown
     try {
       data = text ? JSON.parse(text) : {}
