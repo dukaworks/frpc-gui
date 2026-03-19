@@ -28,11 +28,12 @@ services:
       - FRPC_CONFIG_PATH=/etc/frp/frpc.toml
     volumes:
       # Map your host's frpc config into the container
+      # Set FRPC_CONFIG_HOST_PATH env var, or edit the left side below.
       # Examples:
-      #   Linux:  ./frpc.toml:/etc/frp/frpc.toml
-      #   Synology: /volume1/docker/frpc/frpc.toml:/etc/frp/frpc.toml
-      #   Unraid:  /mnt/user/appdata/frpc/frpc.toml:/etc/frp/frpc.toml
-      - /path/to/your/frpc.toml:/etc/frp/frpc.toml
+      #   Linux:      ./frpc.toml:/etc/frp/frpc.toml
+      #   Synology:   /volume1/docker/frpc/frpc.toml:/etc/frp/frpc.toml
+      #   Unraid:     /mnt/user/appdata/frpc/frpc.toml:/etc/frp/frpc.toml
+      - ${FRPC_CONFIG_HOST_PATH:-./frpc.toml}:/etc/frp/frpc.toml
       # Mount Docker socket so frpc-gui can detect & control Docker-frpc
       # (remove if frpc runs as systemd or raw process)
       - /var/run/docker.sock:/var/run/docker.sock

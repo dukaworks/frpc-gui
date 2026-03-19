@@ -23,7 +23,11 @@ pnpm-debug.log*
 # Docker
 Dockerfile
 .dockerignore
-docker-compose.yml
+docker-compose*.yml
+
+# GitHub (keep out of Docker image)
+.github/
+project_docs/
 
 # IDEs
 .vscode

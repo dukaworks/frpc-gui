@@ -7,8 +7,16 @@ const router = Router();
 
 type AuthedRequest = Request & { ssh: SshService };
 
-function getLocalConfigPath() {
-  return process.env.FRPC_CONFIG_PATH || '/etc/frp/frpc.toml';
+/**
+ * Validate a value is safe to interpolate into a shell command.
+ * Allows only alphanumeric, hyphen, underscore, dot, and colon (for docker names with registry:port).
+ */
+/**
+ * Validate a value is safe to interpolate into a shell command.
+ * Allows only alphanumeric, hyphen, underscore, dot, and colon (for docker names with registry:port).
+ */
+function shellSafe(value: string): boolean {
+  return /^[a-zA-Z0-9_.:-]+$/.test(value);
 }
 
 // Local file service for local mode operations
@@ -77,11 +85,13 @@ router.post('/connect', async (req: Request, res: Response) => {
   
   if (isLocalMode) {
     const sessionId = Math.random().toString(36).substring(7);
-    res.json({ 
-      sessionId, 
-      status: 'connected',
-      process: await localServiceManager.scanFrpc()
-    });
+    let process = null;
+    try {
+      process = await localServiceManager.scanFrpc();
+    } catch (error: unknown) {
+      console.error('Local scanFrpc error:', error);
+    }
+    res.json({ sessionId, status: 'connected', process });
     return;
   }
 
@@ -237,7 +247,11 @@ router.post('/service', requireAuth, async (req: Request, res: Response) => {
   try {
     let cmd = '';
     const prefix = requiresSudo ? 'sudo ' : '';
-    
+
+    if (!shellSafe(serviceName)) {
+      return res.status(400).json({ error: 'Invalid service name — shellunsafe characters detected' });
+    }
+
     if (type === 'docker') {
         // Docker control
         if (['start', 'stop', 'restart'].includes(action)) {
@@ -255,7 +269,7 @@ router.post('/service', requireAuth, async (req: Request, res: Response) => {
     } else {
         return res.status(400).json({ error: 'Unsupported service type for control' });
     }
-    
+
     const output = await (req as AuthedRequest).ssh.exec(cmd);
     res.json({ output, success: true });
   } catch (error: unknown) {
@@ -275,6 +289,10 @@ router.get('/logs', requireAuth, async (req: Request, res: Response) => {
   
   if (!type || !serviceName) {
     return res.status(400).json({ error: 'Missing type or serviceName' });
+  }
+
+  if (!shellSafe(serviceName)) {
+    return res.status(400).json({ error: 'Invalid service name — shellunsafe characters detected' });
   }
 
   const n = Math.min(parseInt(lines as string) || 50, 2000);

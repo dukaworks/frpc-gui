@@ -109,8 +109,13 @@ export default function Connect() {
         setConnected(res.sessionId, res.process);
         navigate('/dashboard');
       })
-      .catch(() => {
-        void 0;
+      .catch((e: unknown) => {
+        // Local mode: silently proceed (scan will handle it)
+        // Remote mode: show error so user knows to enter credentials
+        const msg = e instanceof Error ? e.message : '';
+        if (!msg.includes('Not connected')) {
+          console.error('Auto-connect failed:', e);
+        }
       })
       .finally(() => {
         setLoading(false);

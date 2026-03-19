@@ -136,6 +136,9 @@ export default function Dashboard() {
       if (message === 'Not connected' || message.includes('Not connected')) {
           disconnect();
           navigate('/');
+      } else {
+          // Show error to user for non-connection failures
+          showFeedback('error', message || t('dashboard.fetchLogsFailed') || 'Failed to fetch logs');
       }
     } finally {
       setLogsLoading(false);
@@ -521,9 +524,9 @@ export default function Dashboard() {
                       <ArrowLeft className="h-5 w-5" />
                    </Button>
                  </TooltipTrigger>
-                 <TooltipContent>Back to Connect</TooltipContent>
+                  <TooltipContent>{t('dashboard.backToConnect')}</TooltipContent>
                </Tooltip>
-               <h1 className="text-2xl font-bold text-purple-600 dark:text-purple-400">Frpc Manager Dashboard</h1>
+                <h1 className="text-2xl font-bold text-purple-600 dark:text-purple-400">{t('dashboard.title')}</h1>
             </div>
             <div className="flex gap-2">
               <Tooltip>
@@ -532,7 +535,7 @@ export default function Dashboard() {
                     {scanLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : <RefreshCw className="h-5 w-5 text-muted-foreground hover:text-primary" />}
                   </Button>
                 </TooltipTrigger>
-                <TooltipContent>Rescan Service</TooltipContent>
+                  <TooltipContent>{t('dashboard.rescanService')}</TooltipContent>
               </Tooltip>
             </div>
           </header>
@@ -541,40 +544,36 @@ export default function Dashboard() {
             <CardHeader className="pb-2">
               <CardTitle className="text-foreground flex items-center gap-2 text-lg">
                 <Activity className="h-5 w-5 text-amber-600 dark:text-amber-400" />
-                未检测到正在运行的 frpc
+                {t('dashboard.sshNotDetected')}
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <p className="text-sm text-muted-foreground">
-                已建立 SSH 会话，但扫描未发现 frpc 进程。
-                <br/>
-                可能是服务未启动，或者配置文件错误导致启动失败。
-              </p>
+              <p className="text-sm text-muted-foreground">{t('dashboard.sshNotDetectedDesc')}</p>
             </CardContent>
           </Card>
 
           {/* Manual Config Loader */}
           <Card className="mb-6">
             <CardHeader>
-              <CardTitle className="text-base">手动加载配置</CardTitle>
+              <CardTitle className="text-base">{t('dashboard.manualConfigLoader')}</CardTitle>
               <CardDescription>
-                如果 frpc 因配置错误无法启动，请在此处指定配置文件路径进行修复。
+                {t('dashboard.manualConfigLoaderDesc')}
               </CardDescription>
             </CardHeader>
             <CardContent>
               <div className="flex gap-3 items-end">
                 <div className="grid w-full max-w-sm items-center gap-1.5">
-                  <Label htmlFor="config-path">配置文件路径</Label>
-                  <Input 
-                    id="config-path" 
-                    value={manualConfigPath} 
-                    onChange={(e) => setManualConfigPath(e.target.value)} 
-                    placeholder="/etc/frp/frpc.toml" 
+                  <Label htmlFor="config-path">{t('dashboard.manualConfigPath')}</Label>
+                  <Input
+                    id="config-path"
+                    value={manualConfigPath}
+                    onChange={(e) => setManualConfigPath(e.target.value)}
+                    placeholder="/etc/frp/frpc.toml"
                   />
                 </div>
                 <Button onClick={handleManualLoad} disabled={manualLoading} variant="outline">
                   {manualLoading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <FileText className="h-4 w-4 mr-2" />}
-                  加载配置
+                  {t('dashboard.loadConfig')}
                 </Button>
               </div>
             </CardContent>
@@ -585,7 +584,7 @@ export default function Dashboard() {
                 <CardHeader className="pb-2 border-b">
                    <CardTitle className="text-base flex justify-between items-center">
                       <span>配置编辑器: {manualConfigPath}</span>
-                      <Button size="sm" variant="secondary" onClick={() => setManualMode(false)}>关闭编辑器</Button>
+                       <Button size="sm" variant="secondary" onClick={() => setManualMode(false)}>{t('dashboard.closeEditor')}</Button>
                    </CardTitle>
                 </CardHeader>
                 <CardContent className="flex-1 p-0 overflow-hidden">

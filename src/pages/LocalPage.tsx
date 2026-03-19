@@ -79,6 +79,7 @@ export default function LocalPage() {
   const [loadingConfig, setLoadingConfig] = useState(false);
   const [logs, setLogs] = useState('');
   const [logsLoading, setLogsLoading] = useState(false);
+  const [logsError, setLogsError] = useState('');
   const [serviceLoading, setServiceLoading] = useState(false);
   const [scanLoading, setScanLoading] = useState(false);
   const [feedbackOpen, setFeedbackOpen] = useState(false);
@@ -141,8 +142,13 @@ export default function LocalPage() {
     setLogsLoading(true);
     try {
       const res = await ApiClient.fetchLogs(processInfo.source, processInfo.serviceName, { lines: 80 });
+      setLogsError('');
       setLogs(cleanAnsi(res.logs || ''));
-    } catch { void 0; } finally {
+    } catch (e: unknown) {
+      console.error('Failed to fetch logs:', e);
+      const msg = e instanceof Error ? e.message : String(e);
+      setLogsError(msg);
+    } finally {
       setLogsLoading(false);
     }
   };
@@ -349,7 +355,9 @@ export default function LocalPage() {
               </CardHeader>
               <CardContent className="flex-1 p-0 overflow-hidden relative group">
                 <div className="absolute inset-0 p-4 font-mono text-[11px] overflow-auto">
-                  {logsLoading && !logs ? (
+                  {logsError ? (
+                    <div className="text-red-400 italic">{t('dashboard.fetchLogsFailed')}: {logsError}</div>
+                  ) : logsLoading && !logs ? (
                     <div className="flex items-center justify-center h-full text-slate-500"><Loader2 className="h-5 w-5 animate-spin mr-2" /></div>
                   ) : logs ? (
                     <div className="space-y-1">
@@ -372,18 +380,18 @@ export default function LocalPage() {
           <Card className="border-amber-500/30">
             <CardHeader className="pb-2">
               <CardTitle className="text-foreground flex items-center gap-2 text-lg">
-                <Activity className="h-5 w-5 text-amber-600" /> 未检测到正在运行的 frpc
+                <Activity className="h-5 w-5 text-amber-600" /> {t('dashboard.localNotDetected')}
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <p className="text-sm text-muted-foreground">frpc-gui 正在以本地模式运行，但未发现 frpc 服务。</p>
-              <p className="text-sm text-muted-foreground">请确认：</p>
+              <p className="text-sm text-muted-foreground">{t('dashboard.localNotDetectedDesc')}</p>
+              <p className="text-sm text-muted-foreground">{t('dashboard.localNotDetectedCheckTitle')}</p>
               <ul className="text-sm text-muted-foreground list-disc list-inside space-y-1">
-                <li>frpc 已在运行（Docker / systemd / 进程）</li>
-                <li>如果 frpc 是 Docker 容器，frpc-gui 容器已正确挂载 docker.sock</li>
+                <li>{t('dashboard.localNotDetectedCheck1')}</li>
+                <li>{t('dashboard.localNotDetectedCheck2')}</li>
               </ul>
               <Button onClick={scan} disabled={scanLoading} variant="outline">
-                {scanLoading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <RefreshCw className="h-4 w-4 mr-2" />} 重新扫描
+                {scanLoading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <RefreshCw className="h-4 w-4 mr-2" />} {t('dashboard.localRescan')}
               </Button>
             </CardContent>
           </Card>

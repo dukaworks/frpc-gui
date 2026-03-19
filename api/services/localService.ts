@@ -476,12 +476,23 @@ class LocalServiceManager {
   }
 
   /**
+   * Validate a value is safe to interpolate into a shell command.
+   * Allows only alphanumeric, hyphen, underscore, dot, and colon (for docker names with registry:port).
+   */
+  private shellSafe(value: string): boolean {
+    return /^[a-zA-Z0-9_.:-]+$/.test(value);
+  }
+
+  /**
    * Control a Docker container (start/stop/restart)
    */
   async controlDocker(action: string, serviceName: string): Promise<string> {
     const dockerCmd = this.hasSudo ? 'sudo docker' : 'docker';
     if (!['start', 'stop', 'restart'].includes(action)) {
       throw new Error(`Invalid action for docker: ${action}`);
+    }
+    if (!this.shellSafe(serviceName)) {
+      throw new Error(`Invalid service name — shellunsafe characters detected`);
     }
     return localExec(`${dockerCmd} ${action} ${serviceName}`, false);
   }
@@ -493,6 +504,9 @@ class LocalServiceManager {
     if (!['start', 'stop', 'restart', 'status'].includes(action)) {
       throw new Error(`Invalid action for systemd: ${action}`);
     }
+    if (!this.shellSafe(serviceName)) {
+      throw new Error(`Invalid service name — shellunsafe characters detected`);
+    }
     return localExec(`systemctl ${action} ${serviceName}`, this.hasSudo);
   }
 
@@ -500,6 +514,9 @@ class LocalServiceManager {
    * Fetch logs from a Docker container
    */
   async dockerLogs(serviceName: string, lines = 50, sinceHours?: number): Promise<string> {
+    if (!this.shellSafe(serviceName)) {
+      throw new Error(`Invalid service name — shellunsafe characters detected`);
+    }
     const dockerCmd = this.hasSudo ? 'sudo docker' : 'docker';
     const sinceFlag = sinceHours ? `--since ${sinceHours}h` : '';
     return localExec(`${dockerCmd} logs --tail ${lines} ${sinceFlag} ${serviceName} 2>&1`, false);
@@ -509,6 +526,9 @@ class LocalServiceManager {
    * Fetch logs from a systemd service
    */
   async systemdLogs(serviceName: string, lines = 50, sinceHours?: number): Promise<string> {
+    if (!this.shellSafe(serviceName)) {
+      throw new Error(`Invalid service name — shellunsafe characters detected`);
+    }
     const sinceFlag = sinceHours ? `--since "${sinceHours} hours ago"` : '';
     return localExec(
       `journalctl -u ${serviceName} ${sinceFlag} -n ${lines} --no-pager 2>&1`,
