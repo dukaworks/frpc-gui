@@ -100,6 +100,72 @@ class LocalServiceManager {
   }
 
   /**
+   * Translate a host path (from frpc container) to the frpc-gui container path
+   * by inspecting our own container's mounts.
+   */
+  private async translateHostPathToContainerPath(hostPath: string): Promise<string> {
+    try {
+      // Get our own (frpc-gui) container ID
+      const selfId = await localExec('docker ps -q --filter name=frpc-gui', false);
+      if (!selfId.trim()) return hostPath;
+
+      const selfContainerId = selfId.trim().split('\n')[0];
+      if (!selfContainerId) return hostPath;
+
+      // Inspect our own mounts to find matching host path
+      const selfMountsRaw = await localExec(
+        `docker inspect --format "{{json .Mounts}}" ${selfContainerId}`,
+        false
+      );
+      const selfMounts: Array<{ Type: string; Source: string; Destination: string }> = JSON.parse(selfMountsRaw || '[]');
+
+      for (const mount of selfMounts) {
+        if (mount.Type === 'bind') {
+          // Exact match
+          if (mount.Source === hostPath) {
+            // Check if host path is a file or directory
+            if (hostPath.endsWith('.toml') || hostPath.endsWith('.ini')) {
+              return mount.Destination;
+            }
+            // It's a directory, append filename
+            const filename = hostPath.split('/').pop();
+            return `${mount.Destination}/${filename}`;
+          }
+          // Check if host path is inside a mounted directory
+          if (hostPath.startsWith(mount.Source + '/')) {
+            const relativePath = hostPath.slice(mount.Source.length);
+            return mount.Destination + relativePath;
+          }
+        }
+      }
+
+      // No translation found, try common defaults
+      // If the host path contains 'frp' or 'frpc', try common container paths
+      if (hostPath.includes('/frp/') || hostPath.includes('/frpc/')) {
+        const filename = hostPath.split('/').pop();
+        const candidates = [
+          `/etc/frp/${filename}`,
+          `/etc/frpc/${filename}`,
+          `/frp/${filename}`,
+          `/frpc/${filename}`,
+        ];
+        for (const candidate of candidates) {
+          try {
+            await localExec(`ls "${candidate}" 2>/dev/null`, false);
+            return candidate;
+          } catch {
+            void 0;
+          }
+        }
+      }
+
+      return hostPath;
+    } catch {
+      return hostPath;
+    }
+  }
+
+  /**
    * Discover frpc running as Docker container
    */
   private async scanDocker(): Promise<LocalProcessInfo | null> {
@@ -147,8 +213,9 @@ class LocalServiceManager {
         void 0;
       }
 
-      // Inspect mounts to find config path
-      let configPath = '';
+      // Inspect mounts to find config path (from frpc container's perspective)
+      let hostConfigPath = '';
+      let containerConfigPath = '';
       try {
         const inspectOutput = await localExec(
           `${dockerCmd} inspect --format "{{json .Mounts}}|{{.State.StartedAt}}" ${containerId}`,
@@ -161,21 +228,21 @@ class LocalServiceManager {
           if (mount.Type === 'bind') {
             const dest = mount.Destination;
             if (dest.endsWith('frpc.toml') || dest.endsWith('frpc.ini')) {
-              configPath = mount.Source;
+              hostConfigPath = mount.Source;
               break;
             }
           }
         }
 
         // Fallback: check for /etc/frp or /etc/frpc common paths
-        if (!configPath) {
+        if (!hostConfigPath) {
           for (const mount of mounts) {
-            if (mount.Type === 'bind' && (mount.Destination === '/etc/frp' || mount.Destination === '/etc/frpc')) {
+            if (mount.Type === 'bind' && (mount.Destination === '/etc/frp' || mount.Destination === '/etc/frpc' || mount.Destination === '/frp' || mount.Destination === '/frpc')) {
               const source = mount.Source;
               try {
                 const checkToml = await localExec(`ls "${source}/frpc.toml" 2>/dev/null`, false);
                 if (checkToml && !checkToml.includes('No such file')) {
-                  configPath = `${source}/frpc.toml`;
+                  hostConfigPath = `${source}/frpc.toml`;
                   break;
                 }
               } catch {
@@ -183,6 +250,11 @@ class LocalServiceManager {
               }
             }
           }
+        }
+
+        // Translate host path to frpc-gui container path
+        if (hostConfigPath) {
+          containerConfigPath = await this.translateHostPathToContainerPath(hostConfigPath);
         }
       } catch {
         void 0;
@@ -206,7 +278,7 @@ class LocalServiceManager {
         serviceName: containerName,
         status: 'running',
         source: 'docker',
-        configPath: configPath || undefined,
+        configPath: containerConfigPath || hostConfigPath || undefined,
         command: `${dockerCmd} restart ${containerName}`,
         requiresSudo: !this.hasSudo,
         uptime: containerStatus || 'Unknown',
