@@ -1,6 +1,7 @@
-import type { ConnectResponse, ConfigResponse, FrpcProcessInfo } from '../shared/types';
+import type { ConnectResponse, ConfigResponse, FrpcProcessInfo, FrpsServerInfo, FrpsClient, FrpsProxyResponse } from '../shared/types';
 
 const API_BASE = '/api/frpc';
+const FRPS_BASE = '/api/frps';
 
 type ScanResponse = { process: FrpcProcessInfo | null };
 type LogsResponse = { logs: string };
@@ -148,5 +149,44 @@ export class ApiClient {
 
   static async testUrl(url: string): Promise<TestUrlResponse> {
     return this.request<TestUrlResponse>(`/test-url?url=${encodeURIComponent(url)}`);
+  }
+
+  // ─── FRPS Dashboard (proxied through backend) ──────────────────────────────
+
+  static async saveFrpsConfig(baseUrl: string, user: string, password: string) {
+    const res = await fetch(`${FRPS_BASE}/config`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ baseUrl, user, password }),
+    })
+    if (!res.ok) {
+      const text = await res.text()
+      throw new Error(`Failed to save FRPS config: ${text}`)
+    }
+  }
+
+  static async getFrpsServerInfo(): Promise<FrpsServerInfo> {
+    const res = await fetch(`${FRPS_BASE}/info`)
+    if (!res.ok) throw new Error(`FRPS serverinfo failed: ${res.status}`)
+    return res.json()
+  }
+
+  static async getFrpsClients(): Promise<FrpsClient[]> {
+    const res = await fetch(`${FRPS_BASE}/clients`)
+    if (!res.ok) throw new Error(`FRPS clients failed: ${res.status}`)
+    return res.json()
+  }
+
+  static async getFrpsProxiesByType(type: string): Promise<FrpsProxyResponse> {
+    const res = await fetch(`${FRPS_BASE}/proxies/${encodeURIComponent(type)}`)
+    if (!res.ok) throw new Error(`FRPS proxies failed: ${res.status}`)
+    return res.json()
+  }
+
+  static async clearOfflineFrpsProxies(): Promise<void> {
+    const res = await fetch(`${FRPS_BASE}/proxies/offline`, { method: 'DELETE' })
+    if (!res.ok && res.status !== 204) {
+      throw new Error(`Failed to clear offline proxies: ${res.status}`)
+    }
   }
 }

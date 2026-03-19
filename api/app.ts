@@ -13,6 +13,7 @@ import dotenv from 'dotenv'
 import { fileURLToPath } from 'url'
 import authRoutes from './routes/auth.js'
 import configRoutes from './routes/config.js'
+import frpsRoutes from './routes/frps.js'
 
 // for esm mode
 const __filename = fileURLToPath(import.meta.url)
@@ -32,6 +33,7 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }))
  */
 app.use('/api/auth', authRoutes)
 app.use('/api/frpc', configRoutes)
+app.use('/api/frps', frpsRoutes)
 
 /**
  * health

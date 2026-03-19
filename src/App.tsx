@@ -4,6 +4,7 @@ import Connect from './pages/Connect';
 import ConnectSimple from './pages/ConnectSimple';
 import Dashboard from './pages/Dashboard';
 import LocalPage from './pages/LocalPage';
+import FrpsOverview from './pages/FrpsOverview';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { Footer } from '@/components/Footer';
 import { useTheme } from '@/hooks/useTheme';
@@ -122,6 +123,7 @@ function App() {
                 <Route path="/" element={mode === 'remote' ? <Connect /> : <Navigate to="/local" replace />} />
                 <Route path="/simple" element={<ConnectSimple />} />
                 <Route path="/dashboard" element={mode === 'remote' ? <Dashboard /> : <Navigate to="/local" replace />} />
+                <Route path="/frps" element={<FrpsOverview />} />
                 <Route path="*" element={<Navigate to="/" replace />} />
               </Routes>
             </div>

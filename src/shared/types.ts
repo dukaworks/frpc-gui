@@ -57,3 +57,53 @@ export interface ServerProfile extends CommonConfig {
   id: string;
   name: string; // Profile Alias
 }
+
+// ─── FRPS Dashboard Types ────────────────────────────────────────────────────
+
+export interface FrpsServerInfo {
+  version: string;
+  bindPort: number;
+  vhostHTTPPort: number;
+  vhostHTTPSPort: number;
+  tcpmuxHTTPConnectPort: number;
+  kcpBindPort: number;
+  quicBindPort: number;
+  subdomainHost: string;
+  maxPoolCount: number;
+  maxPortsPerClient: number;
+  heartbeatTimeout: number;
+  allowPortsStr: string;
+  tlsForce: boolean;
+  totalTrafficIn: number;
+  totalTrafficOut: number;
+  curConns: number;
+  clientCounts: number;
+  proxyTypeCount: Record<string, number>;
+}
+
+export interface FrpsClient {
+  key: string;
+  user: string;
+  clientID: string;
+  runID: string;
+  hostname: string;
+  clientIP?: string;
+  metas?: Record<string, string>;
+  firstConnectedAt: number;
+  lastConnectedAt: number;
+  disconnectedAt?: number;
+  online: boolean;
+}
+
+export interface FrpsProxyBase {
+  name: string;
+  type: string;
+  conf: Record<string, unknown>;
+  startTime: number;
+  online: boolean;
+  plugin?: string;
+}
+
+export interface FrpsProxyResponse {
+  proxies: Record<string, FrpsProxyBase>;
+}

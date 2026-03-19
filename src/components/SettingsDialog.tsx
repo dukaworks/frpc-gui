@@ -38,15 +38,19 @@ interface SettingsDialogProps {
 
 export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
   const { t, i18n } = useTranslation();
-  const { 
-    language, setLanguage, 
+  const {
+    language, setLanguage,
     theme, setTheme,
     proxyPageSize, setProxyPageSize,
     serverPageSize, setServerPageSize,
-    frpsDashboardUrl, setFrpsDashboardUrl
+    frpsDashboardUrl, setFrpsDashboardUrl,
+    frpsUsername, setFrpsUsername,
+    frpsPassword, setFrpsPassword,
   } = useSettingsStore();
 
   const [localFrpsUrl, setLocalFrpsUrl] = useState(frpsDashboardUrl);
+  const [localFrpsUser, setLocalFrpsUser] = useState(frpsUsername);
+  const [localFrpsPwd, setLocalFrpsPwd] = useState(frpsPassword);
   const [loadingAuto, setLoadingAuto] = useState(false);
   const [testLoading, setTestLoading] = useState(false);
 
@@ -63,7 +67,9 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
   // Parse existing URL on open
   useEffect(() => {
     setLocalFrpsUrl(frpsDashboardUrl);
-  }, [frpsDashboardUrl, open]);
+    setLocalFrpsUser(frpsUsername);
+    setLocalFrpsPwd(frpsPassword);
+  }, [frpsDashboardUrl, frpsUsername, frpsPassword, open]);
 
   // Auto-fill on open if empty
   useEffect(() => {
@@ -103,13 +109,23 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
     setTheme(val as 'light' | 'dark' | 'system');
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     let finalUrl = localFrpsUrl;
     // Ensure protocol
     if (finalUrl && !finalUrl.startsWith('http')) {
        finalUrl = 'http://' + finalUrl;
     }
     setFrpsDashboardUrl(finalUrl);
+    setFrpsUsername(localFrpsUser);
+    setFrpsPassword(localFrpsPwd);
+    // Sync credentials to backend so it can proxy FRPS API calls
+    if (finalUrl) {
+      try {
+        await ApiClient.saveFrpsConfig(finalUrl, localFrpsUser, localFrpsPwd)
+      } catch (e) {
+        console.error('Failed to sync FRPS config to backend:', e)
+      }
+    }
     onOpenChange(false);
   };
 
@@ -248,6 +264,30 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
                     <Button type="button" variant="outline" size="icon" onClick={handleTest} title={t('settings.testAccess')} disabled={testLoading}>
                         {testLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <ExternalLink className="h-4 w-4" />}
                     </Button>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-2">
+                  <Label htmlFor="frpsUser">{t('settings.username')}</Label>
+                  <Input
+                    id="frpsUser"
+                    placeholder="admin"
+                    value={localFrpsUser}
+                    onChange={(e) => setLocalFrpsUser(e.target.value)}
+                    autoComplete="off"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="frpsPwd">{t('settings.password')}</Label>
+                  <Input
+                    id="frpsPwd"
+                    type="password"
+                    placeholder="••••••"
+                    value={localFrpsPwd}
+                    onChange={(e) => setLocalFrpsPwd(e.target.value)}
+                    autoComplete="off"
+                  />
                 </div>
               </div>
               

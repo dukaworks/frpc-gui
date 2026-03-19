@@ -623,19 +623,12 @@ export default function Dashboard() {
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => {
-                if (frpsDashboardUrl) {
-                  openExternalUrl(frpsDashboardUrl);
-                  return;
-                }
-                showFeedback('error', t('dashboard.frpsUrlNotSet'));
-                setSettingsOpen(true);
-              }}
-              className={frpsDashboardUrl ? "text-muted-foreground hover:bg-primary hover:text-primary-foreground" : "text-muted-foreground/60 hover:bg-primary hover:text-primary-foreground"}
-              title={t('dashboard.openFrpsServer')}
+              onClick={() => navigate('/frps')}
+              className="text-muted-foreground hover:bg-primary hover:text-primary-foreground"
+              title={t('frpsOverview.title')}
             >
-              <BarChart className="h-4 w-4 md:mr-2" />
-              <span className="hidden md:inline">{t('dashboard.openFrpsServer')}</span>
+              <Server className="h-4 w-4 md:mr-2" />
+              <span className="hidden md:inline">{t('frpsOverview.title')}</span>
             </Button>
             <Button
               variant="ghost"
