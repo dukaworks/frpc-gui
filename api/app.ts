@@ -48,6 +48,20 @@ app.use(
 )
 
 /**
+ * Get current GUI mode (local or remote)
+ * Frontend calls this at startup instead of relying on VITE_* baked-in values
+ */
+app.get(
+  '/api/mode',
+  (req: Request, res: Response): void => {
+    void req
+    res.status(200).json({
+      mode: process.env.FRPC_GUI_MODE === 'local' ? 'local' : 'remote',
+    })
+  },
+)
+
+/**
  * error handler middleware
  */
 app.use((error: Error, req: Request, res: Response, next: NextFunction) => {

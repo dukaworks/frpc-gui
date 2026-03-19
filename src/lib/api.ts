@@ -7,6 +7,7 @@ type LogsResponse = { logs: string };
 type SaveConfigResponse = { success: boolean };
 type ServiceControlResponse = { output: string; success: boolean };
 type TestUrlResponse = { ok: boolean; status?: number; statusText?: string; error?: string };
+type ModeResponse = { mode: 'local' | 'remote' };
 
 type ConnectCredentials = {
   host: string;
@@ -22,6 +23,7 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 
 export class ApiClient {
   private static sessionId: string | null = null;
+  private static cachedMode: 'local' | 'remote' | null = null;
 
   static setSessionId(id: string) {
     this.sessionId = id;
@@ -39,12 +41,34 @@ export class ApiClient {
     return this.sessionId;
   }
 
+  /**
+   * Fetch and cache the GUI mode from the backend.
+   * This replaces the build-time VITE_FRPC_GUI_MODE check,
+   * so the Docker image works in both Local and SSH Remote modes.
+   */
+  private static async getMode(): Promise<'local' | 'remote'> {
+    if (this.cachedMode) return this.cachedMode;
+    try {
+      const res = await fetch('/api/mode');
+      if (res.ok) {
+        const data: ModeResponse = await res.json();
+        this.cachedMode = data.mode;
+      }
+    } catch {
+      // If the fetch fails, fall back to remote (SSH) mode
+    }
+    if (!this.cachedMode) {
+      // Also try the legacy build-time env var as fallback
+      this.cachedMode = import.meta.env.VITE_FRPC_GUI_MODE === 'local' ? 'local' : 'remote';
+    }
+    return this.cachedMode;
+  }
+
   private static async request<T = unknown>(endpoint: string, options: RequestInit = {}): Promise<T> {
     const headers = new Headers(options.headers);
     headers.set('Content-Type', 'application/json');
-    
-    // Only set session ID header if not in local mode
-    const isLocalMode = import.meta.env.VITE_FRPC_GUI_MODE === 'local';
+
+    const isLocalMode = await this.getMode() === 'local';
     if (!isLocalMode) {
       headers.set('x-session-id', this.getSessionId() || '');
     }
