@@ -328,7 +328,7 @@ export default function FrpsOverview() {
                                 <div className="col-span-1 text-center">{t('frpsOverview.connections')}</div>
                                 <div className="col-span-2 text-right">{t('frpsOverview.trafficIn')}</div>
                                 <div className="col-span-2 text-right">{t('frpsOverview.trafficOut')}</div>
-                                <div className="col-span-3">{t('frpsOverview.status')}</div>
+                                <div className="col-span-3 text-right">{t('frpsOverview.status')}</div>
                               </div>
                               {items.map((proxy) => {
                                 const conf = proxy.conf
@@ -342,8 +342,8 @@ export default function FrpsOverview() {
                                     key={proxy.name}
                                     className="grid grid-cols-12 gap-3 items-center text-sm px-4 py-2 hover:bg-muted/50 transition-colors border-b last:border-0"
                                   >
-                                    <div className="col-span-3 font-medium text-xs truncate" title={proxy.name}>
-                                      {proxy.name}
+                                    <div className="col-span-3 font-medium text-xs truncate" title={proxy.name.replace(/"/g, '')}>
+                                      {proxy.name.replace(/"/g, '')}
                                     </div>
                                     <div className="col-span-1 text-xs text-muted-foreground font-mono">
                                       {port || '—'}
@@ -357,10 +357,10 @@ export default function FrpsOverview() {
                                     <div className="col-span-2 text-right text-xs text-muted-foreground font-mono">
                                       {trafficOut ? formatBytes(trafficOut) : '0 B'}
                                     </div>
-                                    <div className="col-span-3 flex items-center gap-1.5">
+                                    <div className="col-span-3 flex items-center justify-end gap-1.5">
                                       <span className={`w-2 h-2 rounded-full ${isOnline ? 'bg-green-500' : 'bg-gray-400'}`} />
                                       <span className={`text-xs font-medium ${isOnline ? 'text-green-600 dark:text-green-400' : 'text-muted-foreground'}`}>
-                                        {proxy.status}
+                                        {isOnline ? t('frpsOverview.online') : t('frpsOverview.offline')}
                                       </span>
                                     </div>
                                   </div>
