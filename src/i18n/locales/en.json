@@ -150,7 +150,10 @@
     "clearOfflineSuccess": "Offline clients cleared successfully",
     "openOriginal": "Open Original Dashboard",
     "openOriginalDesc": "Open the native FRPS web dashboard",
-    "clientListRequiresV067": "v{{version}} — upgrade to v0.67+ for client list"
+    "proxies": "Proxies",
+    "noProxies": "No proxies configured",
+    "proxyName": "Proxy Name",
+    "config": "Configuration"
   },
   "settings": {
     "general": "General",

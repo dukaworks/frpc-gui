@@ -36,7 +36,7 @@ import {
   Users,
   Network,
 } from 'lucide-react'
-import type { FrpsServerInfo, FrpsClient } from '@/shared/types'
+import type { FrpsServerInfo, FrpsClient, FrpsProxyBase } from '@/shared/types'
 
 function formatBytes(bytes: number): string {
   if (bytes === 0) return '0 B'
@@ -67,6 +67,7 @@ export default function FrpsOverview() {
   const { frpsDashboardUrl, frpsUsername, frpsPassword } = useSettingsStore()
   const [serverInfo, setServerInfo] = useState<FrpsServerInfo | null>(null)
   const [clients, setClients] = useState<FrpsClient[]>([])
+  const [proxies, setProxies] = useState<Record<string, FrpsProxyBase>>({})
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
 
@@ -106,6 +107,23 @@ export default function FrpsOverview() {
         // /api/clients doesn't exist on frps < v0.67.0 — that's OK
       }
       setClients(clientList)
+
+      // Fetch proxy list — try each common type
+      const proxyTypes = ['tcp', 'udp', 'http', 'https', 'stcp', 'xtcp', 'sudp']
+      const allProxies: Record<string, FrpsProxyBase> = {}
+      await Promise.allSettled(
+        proxyTypes.map(async (type) => {
+          try {
+            const res = await ApiClient.getFrpsProxiesByType(type)
+            if (res?.proxies) {
+              Object.assign(allProxies, res.proxies)
+            }
+          } catch {
+            // Type not available — ignore
+          }
+        }),
+      )
+      setProxies(allProxies)
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : String(e)
       setError(msg)
@@ -331,11 +349,6 @@ export default function FrpsOverview() {
                   <Users className="h-4 w-4" />
                   {t('frpsOverview.frpcClients')} ({clients.length})
                 </CardTitle>
-                {serverInfo && !clients.length && (
-                  <span className="text-xs text-muted-foreground">
-                    {t('frpsOverview.clientListRequiresV067', { version: serverInfo.version })}
-                  </span>
-                )}
                 <div className="flex gap-2">
                   <Tooltip>
                     <TooltipTrigger asChild>
@@ -399,6 +412,61 @@ export default function FrpsOverview() {
                         </div>
                         <div className="col-span-3 text-xs text-muted-foreground truncate">
                           {formatTs(client.lastConnectedAt)}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Proxy List */}
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between">
+                <CardTitle className="text-base flex items-center gap-2">
+                  <Globe className="h-4 w-4" />
+                  {t('frpsOverview.proxies')} ({Object.keys(proxies).length})
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {Object.keys(proxies).length === 0 ? (
+                  <p className="text-sm text-muted-foreground text-center py-8">{t('frpsOverview.noProxies')}</p>
+                ) : (
+                  <div className="space-y-2">
+                    <div className="grid grid-cols-12 gap-2 text-xs text-muted-foreground font-medium px-2">
+                      <div className="col-span-2">{t('frpsOverview.proxyName')}</div>
+                      <div className="col-span-1">{t('frpsOverview.type')}</div>
+                      <div className="col-span-2">{t('frpsOverview.status')}</div>
+                      <div className="col-span-7">{t('frpsOverview.config')}</div>
+                    </div>
+                    {Object.values(proxies).map((proxy) => (
+                      <div
+                        key={proxy.name}
+                        className="grid grid-cols-12 gap-2 items-center text-sm px-2 py-2 rounded-md hover:bg-muted/50 transition-colors"
+                      >
+                        <div className="col-span-2 font-mono text-xs truncate" title={proxy.name}>
+                          {proxy.name}
+                        </div>
+                        <div className="col-span-1">
+                          <Badge variant="outline" className="text-xs uppercase">
+                            {proxy.type}
+                          </Badge>
+                        </div>
+                        <div className="col-span-2">
+                          {proxy.online ? (
+                            <span className="flex items-center gap-1 text-green-600 dark:text-green-400 text-xs">
+                              <Wifi className="h-3 w-3" />
+                              {t('frpsOverview.online')}
+                            </span>
+                          ) : (
+                            <span className="flex items-center gap-1 text-muted-foreground text-xs">
+                              <WifiOff className="h-3 w-3" />
+                              {t('frpsOverview.offline')}
+                            </span>
+                          )}
+                        </div>
+                        <div className="col-span-7 text-xs text-muted-foreground font-mono truncate">
+                          {Object.entries(proxy.conf || {}).map(([k, v]) => `${k}=${v}`).join(' | ') || '—'}
                         </div>
                       </div>
                     ))}
