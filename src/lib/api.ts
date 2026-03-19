@@ -23,6 +23,7 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 
 export class ApiClient {
   private static sessionId: string | null = null;
+  /** In-memory cache for the session — reset on page reload */
   private static cachedMode: 'local' | 'remote' | null = null;
 
   static setSessionId(id: string) {
@@ -42,25 +43,28 @@ export class ApiClient {
   }
 
   /**
-   * Fetch and cache the GUI mode from the backend.
-   * This replaces the build-time VITE_FRPC_GUI_MODE check,
-   * so the Docker image works in both Local and SSH Remote modes.
+   * Always fetch GUI mode from the backend — never cache across page loads.
+   *
+   * Background: when users switch between Docker images (AIO vs SSH), the SPA may
+   * not fully reload, leaving a stale in-memory `cachedMode` from the previous
+   * deployment. Always hitting /api/mode ensures correct mode detection regardless
+   * of which Docker image is currently running.
+   *
+   * /api/mode is a lightweight endpoint that only reads an env var, so this is fast.
    */
   private static async getMode(): Promise<'local' | 'remote'> {
-    if (this.cachedMode) return this.cachedMode;
     try {
       const res = await fetch('/api/mode');
       if (res.ok) {
         const data: ModeResponse = await res.json();
         this.cachedMode = data.mode;
+        return this.cachedMode;
       }
     } catch {
-      // If the fetch fails, fall back to remote (SSH) mode
+      // Fall through to build-time fallback
     }
-    if (!this.cachedMode) {
-      // Also try the legacy build-time env var as fallback
-      this.cachedMode = import.meta.env.VITE_FRPC_GUI_MODE === 'local' ? 'local' : 'remote';
-    }
+    // Build-time fallback (only when /api/mode is unreachable, e.g. dev server not running)
+    this.cachedMode = (import.meta as { env: { VITE_FRPC_GUI_MODE?: string } }).env.VITE_FRPC_GUI_MODE === 'local' ? 'local' : 'remote';
     return this.cachedMode;
   }
 
@@ -68,7 +72,7 @@ export class ApiClient {
     const headers = new Headers(options.headers);
     headers.set('Content-Type', 'application/json');
 
-    const isLocalMode = await this.getMode() === 'local';
+    const isLocalMode = (await this.getMode()) === 'local';
     if (!isLocalMode) {
       headers.set('x-session-id', this.getSessionId() || '');
     }
