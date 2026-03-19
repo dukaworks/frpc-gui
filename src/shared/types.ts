@@ -104,6 +104,25 @@ export interface FrpsProxyBase {
   plugin?: string;
 }
 
+export interface FrpsProxyItem {
+  name: string;
+  conf: {
+    name: string;
+    type: string;
+    localIP: string;
+    remotePort: number;
+    plugin?: string;
+    [key: string]: unknown;
+  };
+  clientVersion: string;
+  todayTrafficIn: number;
+  todayTrafficOut: number;
+  curConns: number;
+  lastStartTime: string;
+  lastCloseTime: string;
+  status: 'online' | 'offline';
+}
+
 export interface FrpsProxyResponse {
-  proxies: Record<string, FrpsProxyBase>;
+  proxies: FrpsProxyItem[];
 }

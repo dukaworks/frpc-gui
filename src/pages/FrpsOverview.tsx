@@ -40,7 +40,7 @@ import {
   Users,
   Network,
 } from 'lucide-react'
-import type { FrpsServerInfo, FrpsClient, FrpsProxyBase } from '@/shared/types'
+import type { FrpsServerInfo, FrpsClient, FrpsProxyItem } from '@/shared/types'
 
 function formatBytes(bytes: number): string {
   if (bytes === 0) return '0 B'
@@ -62,7 +62,7 @@ export default function FrpsOverview() {
   const { frpsDashboardUrl, frpsUsername, frpsPassword } = useSettingsStore()
   const [serverInfo, setServerInfo] = useState<FrpsServerInfo | null>(null)
   const [clients, setClients] = useState<FrpsClient[]>([])
-  const [proxies, setProxies] = useState<Record<string, Record<string, FrpsProxyBase>>>({})
+  const [proxies, setProxies] = useState<Record<string, FrpsProxyItem[]>>({})
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
 
@@ -103,17 +103,14 @@ export default function FrpsOverview() {
       setClients(clientList)
 
       // Fetch proxy list — hardcoded tab order, TCP first
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const grouped: Record<string, any> = {}
+      const grouped: Record<string, FrpsProxyItem[]> = {}
       await Promise.allSettled(
         proxyTypes.map(async (type) => {
           try {
             const res = await ApiClient.getFrpsProxiesByType(type)
-            console.log(`[frps] /proxy/${type}:`, JSON.stringify(res?.proxies).slice(0, 200))
-            grouped[type] = res?.proxies ?? {}
-          } catch (e) {
-            console.log(`[frps] /proxy/${type} error:`, e)
-            grouped[type] = {}
+            grouped[type] = res?.proxies ?? []
+          } catch {
+            grouped[type] = []
           }
         }),
       )
@@ -318,10 +315,10 @@ export default function FrpsOverview() {
                       ))}
                     </TabsList>
                     {proxyTypes.map((type) => {
-                      const items = proxies[type] || {}
+                      const items = proxies[type] || []
                       return (
                         <TabsContent key={type} value={type} className="m-0">
-                          {Object.keys(items).length === 0 ? (
+                          {items.length === 0 ? (
                             <p className="text-sm text-muted-foreground text-center py-8">{t('frpsOverview.noProxies')}</p>
                           ) : (
                             <div>
@@ -333,20 +330,20 @@ export default function FrpsOverview() {
                                 <div className="col-span-2 text-right">{t('frpsOverview.trafficOut')}</div>
                                 <div className="col-span-3">{t('frpsOverview.status')}</div>
                               </div>
-                              {Object.entries(items).map(([name, proxy]) => {
-                                const conf = proxy.conf as Record<string, unknown> | undefined
-                                const conns = conf?.curConns as number | undefined
-                                const trafficIn = conf?.totalTrafficIn as number | undefined
-                                const trafficOut = conf?.totalTrafficOut as number | undefined
-                                const port = conf?.remoteAddr as string | undefined
-                                const isOnline = proxy.online === 'online' || proxy.online === true
+                              {items.map((proxy) => {
+                                const conf = proxy.conf
+                                const port = conf?.remotePort
+                                const trafficIn = proxy.todayTrafficIn
+                                const trafficOut = proxy.todayTrafficOut
+                                const conns = proxy.curConns
+                                const isOnline = proxy.status === 'online'
                                 return (
                                   <div
-                                    key={name}
+                                    key={proxy.name}
                                     className="grid grid-cols-12 gap-3 items-center text-sm px-4 py-2 hover:bg-muted/50 transition-colors border-b last:border-0"
                                   >
-                                    <div className="col-span-3 font-medium text-xs truncate" title={name}>
-                                      {name}
+                                    <div className="col-span-3 font-medium text-xs truncate" title={proxy.name}>
+                                      {proxy.name}
                                     </div>
                                     <div className="col-span-1 text-xs text-muted-foreground font-mono">
                                       {port || '—'}
@@ -355,15 +352,15 @@ export default function FrpsOverview() {
                                       {conns ?? 0}
                                     </div>
                                     <div className="col-span-2 text-right text-xs text-muted-foreground font-mono">
-                                      {trafficIn !== undefined ? formatBytes(trafficIn) : '0 B'}
+                                      {trafficIn ? formatBytes(trafficIn) : '0 B'}
                                     </div>
                                     <div className="col-span-2 text-right text-xs text-muted-foreground font-mono">
-                                      {trafficOut !== undefined ? formatBytes(trafficOut) : '0 B'}
+                                      {trafficOut ? formatBytes(trafficOut) : '0 B'}
                                     </div>
                                     <div className="col-span-3 flex items-center gap-1.5">
                                       <span className={`w-2 h-2 rounded-full ${isOnline ? 'bg-green-500' : 'bg-gray-400'}`} />
                                       <span className={`text-xs font-medium ${isOnline ? 'text-green-600 dark:text-green-400' : 'text-muted-foreground'}`}>
-                                        {isOnline ? 'online' : 'offline'}
+                                        {proxy.status}
                                       </span>
                                     </div>
                                   </div>
