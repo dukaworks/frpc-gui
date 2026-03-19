@@ -433,22 +433,24 @@ export default function FrpsOverview() {
                   <p className="text-sm text-muted-foreground text-center py-8">{t('frpsOverview.noProxies')}</p>
                 ) : (
                   <div className="space-y-2">
-                    <div className="grid grid-cols-12 gap-2 text-xs text-muted-foreground font-medium px-2">
+                    <div className="grid grid-cols-12 gap-2 text-xs text-muted-foreground font-medium px-2 py-1 border-b">
                       <div className="col-span-3">{t('frpsOverview.proxyName')}</div>
                       <div className="col-span-1">{t('frpsOverview.type')}</div>
-                      <div className="col-span-2">{t('frpsOverview.status')}</div>
-                      <div className="col-span-1">{t('frpsOverview.connections')}</div>
-                      <div className="col-span-2">{t('frpsOverview.trafficIn')}</div>
-                      <div className="col-span-3">{t('frpsOverview.trafficOut')}</div>
+                      <div className="col-span-1 text-center">{t('frpsOverview.connections')}</div>
+                      <div className="col-span-2 text-right">{t('frpsOverview.trafficIn')}</div>
+                      <div className="col-span-2 text-right">{t('frpsOverview.trafficOut')}</div>
+                      <div className="col-span-3">{t('frpsOverview.status')}</div>
                     </div>
                     {Object.values(proxies).map((proxy) => {
-                      const conns = (proxy.conf as Record<string, unknown>)?.curConns as number | undefined
-                      const trafficIn = (proxy.conf as Record<string, unknown>)?.totalTrafficIn as number | undefined
-                      const trafficOut = (proxy.conf as Record<string, unknown>)?.totalTrafficOut as number | undefined
+                      const conf = proxy.conf as Record<string, unknown> | undefined
+                      const conns = conf?.curConns as number | undefined
+                      const trafficIn = conf?.totalTrafficIn as number | undefined
+                      const trafficOut = conf?.totalTrafficOut as number | undefined
+                      const isOnline = proxy.online === 'online' || proxy.online === true
                       return (
                         <div
                           key={proxy.name}
-                          className="grid grid-cols-12 gap-2 items-center text-sm px-2 py-2 rounded-md hover:bg-muted/50 transition-colors"
+                          className="grid grid-cols-12 gap-2 items-center text-sm px-2 py-2 hover:bg-muted/50 transition-colors"
                         >
                           <div className="col-span-3 font-medium text-xs truncate" title={proxy.name}>
                             {proxy.name}
@@ -458,27 +460,20 @@ export default function FrpsOverview() {
                               {proxy.type}
                             </Badge>
                           </div>
-                          <div className="col-span-2">
-                            {(proxy.online === 'online' || proxy.online === true) ? (
-                              <span className="flex items-center gap-1 text-green-600 dark:text-green-400 text-xs">
-                                <Wifi className="h-3 w-3" />
-                                {t('frpsOverview.online')}
-                              </span>
-                            ) : (
-                              <span className="flex items-center gap-1 text-muted-foreground text-xs">
-                                <WifiOff className="h-3 w-3" />
-                                {t('frpsOverview.offline')}
-                              </span>
-                            )}
+                          <div className="col-span-1 text-center text-xs text-muted-foreground font-mono">
+                            {conns ?? 0}
                           </div>
-                          <div className="col-span-1 text-xs text-muted-foreground">
-                            {conns ?? '—'}
+                          <div className="col-span-2 text-right text-xs text-muted-foreground font-mono">
+                            {trafficIn !== undefined ? formatBytes(trafficIn) : '0 B'}
                           </div>
-                          <div className="col-span-2 text-xs text-muted-foreground font-mono truncate">
-                            {trafficIn !== undefined ? formatBytes(trafficIn) : '—'}
+                          <div className="col-span-2 text-right text-xs text-muted-foreground font-mono">
+                            {trafficOut !== undefined ? formatBytes(trafficOut) : '0 B'}
                           </div>
-                          <div className="col-span-3 text-xs text-muted-foreground font-mono truncate">
-                            {trafficOut !== undefined ? formatBytes(trafficOut) : '—'}
+                          <div className="col-span-3 flex items-center gap-1">
+                            <span className={`w-2 h-2 rounded-full ${isOnline ? 'bg-green-500' : 'bg-gray-400'}`} />
+                            <span className={`text-xs font-medium ${isOnline ? 'text-green-600 dark:text-green-400' : 'text-muted-foreground'}`}>
+                              {isOnline ? 'online' : 'offline'}
+                            </span>
                           </div>
                         </div>
                       )
