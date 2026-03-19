@@ -32,19 +32,18 @@ function getErrorProxyNames(logs?: string): Set<string> {
   const errorNames = new Set<string>();
   if (!logs) return errorNames;
 
-  // Extract proxy names from error logs
-  // Real frpc formats:
-  //   [E] [control.go:123] [runId] [ssh] start error: ...
-  //   [E] [file.go:line]   [runId] proxy [name]: error ...
-  //   [E] [file.go:line]   [runId] [ssh] start proxy success  (also uses brackets)
-  // Proxy names in brackets (not in "connect to local service [IP:Port]")
-  // We capture [proxyName] that is NOT preceded by "connect to local service"
-  const errorLineRegex = /\[E\]\s*\[[^\]]+\]\s*\[[^\]]+\]\s+(?:proxy\s+)?\[([^\]]+)\](?!\s*connect\s+to\s+local)/gi;
-
-  let match;
-  while ((match = errorLineRegex.exec(logs)) !== null) {
-    const name = match[1];
-    if (name && name !== 'proxy') {
+  for (const rawLine of logs.split('\n')) {
+    const line = rawLine.trim();
+    if (!line.includes('[E]')) continue;
+    // Real frpc format:
+    //   [E] [file.go:line] [runId] [PROXY_NAME] connect to local service [IP:PORT] error: ...
+    // Strategy: split by "connect to local", the 4th bracket in the left part is the proxy name.
+    // This avoids complex regex issues with nested brackets and character class escaping.
+    const beforeConnect = line.split('connect to local')[0];
+    const brackets = beforeConnect.match(/\[([^\]]+)\]/g);
+    if (brackets && brackets.length >= 4) {
+      // 4th bracket (0-indexed: index 3), strip the surrounding []
+      const name = brackets[3].slice(1, -1);
       errorNames.add(name);
     }
   }
