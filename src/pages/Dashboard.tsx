@@ -6,7 +6,7 @@ import { ApiClient } from '@/lib/api';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, Terminal, FileText, Activity, Server, Edit3, ArrowLeft, LayoutGrid, Settings, Plus, RotateCw, Power, RefreshCw, CheckSquare, Trash2, Globe, Lock, BarChart, Download, Upload, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Loader2, Terminal, FileText, Activity, Server, Edit3, ArrowLeft, LayoutGrid, Settings, Plus, RotateCw, Power, RefreshCw, CheckSquare, Trash2, Globe, Lock, BarChart, Download, Upload, ChevronLeft, ChevronRight, ExternalLink } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ConfigEditor } from '@/components/ConfigEditor';
 import { ProxyListOverview } from '@/components/ConfigEditor/ProxyListOverview';
@@ -630,6 +630,21 @@ export default function Dashboard() {
               <Server className="h-4 w-4 md:mr-2" />
               <span className="hidden md:inline">{t('frpsOverview.title')}</span>
             </Button>
+            {frpsDashboardUrl && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => openExternalUrl(frpsDashboardUrl)}
+                    title={t('dashboard.openFrpsDashboard')}
+                  >
+                    <ExternalLink className="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>{t('dashboard.openFrpsDashboard')}</TooltipContent>
+              </Tooltip>
+            )}
             <Button
               variant="ghost"
               size="icon"

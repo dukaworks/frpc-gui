@@ -20,7 +20,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Settings, Loader2, ExternalLink } from "lucide-react";
+import { Settings, Loader2, ExternalLink, Check, X } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -53,6 +53,7 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
   const [localFrpsPwd, setLocalFrpsPwd] = useState(frpsPassword);
   const [loadingAuto, setLoadingAuto] = useState(false);
   const [testLoading, setTestLoading] = useState(false);
+  const [testStatus, setTestStatus] = useState<'idle' | 'ok' | 'fail'>('idle');
 
   const [feedbackOpen, setFeedbackOpen] = useState(false);
   const [feedbackType, setFeedbackType] = useState<'success' | 'error'>('success');
@@ -64,11 +65,12 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
     setFeedbackOpen(true);
   };
 
-  // Parse existing URL on open
+  // Parse existing URL on open — reset test status
   useEffect(() => {
     setLocalFrpsUrl(frpsDashboardUrl);
     setLocalFrpsUser(frpsUsername);
     setLocalFrpsPwd(frpsPassword);
+    setTestStatus('idle');
   }, [frpsDashboardUrl, frpsUsername, frpsPassword, open]);
 
   // Auto-fill on open if empty
@@ -131,37 +133,21 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
 
   const handleTest = async () => {
     let finalUrl = localFrpsUrl;
-    // Ensure protocol
     if (finalUrl && !finalUrl.startsWith('http')) {
        finalUrl = 'http://' + finalUrl;
     }
-
-    if (!finalUrl) {
-      showFeedback('error', t('settings.testAccessEmpty'));
-      return;
-    }
+    if (!finalUrl) return;
 
     setTestLoading(true);
+    setTestStatus('idle');
     try {
       const result = await ApiClient.testUrl(finalUrl);
-      if (result.ok) {
-        const status = typeof result.status === 'number' ? String(result.status) : '';
-        showFeedback('success', t('settings.testAccessSuccess', { status }));
-      } else {
-        showFeedback('error', t('settings.testAccessFailed', { error: result.error || '' }));
-      }
-    } catch (e: unknown) {
-      const message = e instanceof Error ? e.message : String(e);
-      showFeedback('error', t('settings.testAccessFailed', { error: message }));
+      setTestStatus(result.ok ? 'ok' : 'fail');
+    } catch {
+      setTestStatus('fail');
     } finally {
       setTestLoading(false);
     }
-
-    if (window.electron?.openExternal) {
-      void window.electron.openExternal(finalUrl);
-      return;
-    }
-    window.open(finalUrl, '_blank', 'noopener,noreferrer');
   };
 
   return (
@@ -254,15 +240,30 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
               
               <div className="space-y-2">
                 <Label htmlFor="frpsUrl">{t('settings.frpsUrl')}</Label>
-                <div className="flex gap-2">
+                <div className="flex gap-2 items-center">
                     <Input
                       id="frpsUrl"
                       placeholder={t('settings.frpsUrlPlaceholder')}
                       value={localFrpsUrl}
-                      onChange={(e) => setLocalFrpsUrl(e.target.value)}
+                      onChange={(e) => { setLocalFrpsUrl(e.target.value); setTestStatus('idle'); }}
                     />
-                    <Button type="button" variant="outline" size="icon" onClick={handleTest} title={t('settings.testAccess')} disabled={testLoading}>
-                        {testLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <ExternalLink className="h-4 w-4" />}
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="icon"
+                      onClick={handleTest}
+                      title={t('settings.testAccess')}
+                      disabled={testLoading || !localFrpsUrl}
+                    >
+                      {testLoading ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : testStatus === 'ok' ? (
+                        <Check className="h-4 w-4 text-green-500" />
+                      ) : testStatus === 'fail' ? (
+                        <X className="h-4 w-4 text-red-500" />
+                      ) : (
+                        <ExternalLink className="h-4 w-4" />
+                      )}
                     </Button>
                 </div>
               </div>
