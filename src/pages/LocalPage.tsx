@@ -6,11 +6,12 @@
  */
 
 import { useEffect, useState, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { ApiClient } from '@/lib/api';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, Terminal, FileText, Activity, Edit3, Settings, Plus, RotateCw, RefreshCw, CheckSquare, Trash2, Globe, Lock, BarChart, Download, Upload, ChevronLeft, ChevronRight, Power } from 'lucide-react';
+import { Loader2, Terminal, FileText, Activity, Edit3, Settings, Plus, RotateCw, RefreshCw, CheckSquare, Trash2, Globe, Lock, BarChart, Download, Upload, ChevronLeft, ChevronRight, Power, Server, ExternalLink } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ConfigEditor } from '@/components/ConfigEditor';
 import { ProxyListOverview } from '@/components/ConfigEditor/ProxyListOverview';
@@ -70,6 +71,7 @@ function cleanAnsi(raw: string) {
 export default function LocalPage() {
   const { t } = useTranslation();
   useTheme(); // Apply dark class to <html> for Tailwind dark mode
+  const navigate = useNavigate();
   const { frpsDashboardUrl } = useSettingsStore();
 
   // ── State ────────────────────────────────────────────────────────────────
@@ -262,8 +264,42 @@ export default function LocalPage() {
                   {scanLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : <RefreshCw className="h-5 w-5 text-muted-foreground hover:text-primary" />}
                 </Button>
               </TooltipTrigger>
-              <TooltipContent>Rescan</TooltipContent>
+              <TooltipContent>{t('dashboard.rescanService')}</TooltipContent>
             </Tooltip>
+
+            {/* FRPS Overview */}
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => navigate('/frps')}
+                  className="text-muted-foreground hover:bg-primary hover:text-primary-foreground"
+                >
+                  <Server className="h-4 w-4 md:mr-2" />
+                  <span className="hidden md:inline">{t('frpsOverview.title')}</span>
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>{t('frpsOverview.title')}</TooltipContent>
+            </Tooltip>
+
+            {/* Open original FRPS dashboard */}
+            {frpsDashboardUrl && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => openExternalUrl(frpsDashboardUrl)}
+                    title={t('dashboard.openFrpsDashboard')}
+                  >
+                    <ExternalLink className="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>{t('dashboard.openFrpsDashboard')}</TooltipContent>
+              </Tooltip>
+            )}
+
             <Button variant="ghost" size="icon" onClick={() => setSettingsOpen(true)} className="text-muted-foreground hover:bg-primary hover:text-primary-foreground">
               <Settings className="h-5 w-5" />
             </Button>
