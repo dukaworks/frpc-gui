@@ -12,6 +12,7 @@ interface FrpcState {
   setConnected: (sessionId: string, processInfo: FrpcProcessInfo | null) => void;
   setProcessInfo: (processInfo: FrpcProcessInfo | null) => void;
   disconnect: () => void;
+  resetForLocalMode: () => void;
   setConfigPath: (path: string) => void;
   setRestartRequired: (required: boolean) => void;
 }
@@ -38,18 +39,29 @@ export const useFrpcStore = create<FrpcState>()(
           processInfo,
           configPath: processInfo?.configPath || null,
         }),
-      disconnect: () => {
-        // First clear the API session to prevent re-auto-connect
-        ApiClient.setSessionId('');
-        // Then update the store state
-        set({
-          isConnected: false,
-          sessionId: null,
-          processInfo: null,
-          configPath: null,
-          restartRequired: false,
-        });
-      },
+  disconnect: () => {
+    // First clear the API session to prevent re-auto-connect
+    ApiClient.setSessionId('');
+    // Then update the store state
+    set({
+      isConnected: false,
+      sessionId: null,
+      processInfo: null,
+      configPath: null,
+      restartRequired: false,
+    });
+  },
+  /** Clear stale SSH session data when entering local mode */
+  resetForLocalMode: () => {
+    ApiClient.setSessionId('');
+    set({
+      isConnected: false,
+      sessionId: null,
+      processInfo: null,
+      configPath: null,
+      restartRequired: false,
+    });
+  },
       setConfigPath: (path) => set({ configPath: path }),
       setRestartRequired: (required) => set({ restartRequired: required }),
     }),
