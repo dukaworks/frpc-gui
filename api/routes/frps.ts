@@ -1,23 +1,19 @@
 /**
  * Backend proxy for frps dashboard API.
- * Proxies requests to the frps webServer (typically port 7500)
- * with Basic Auth headers injected from settings.
+ * Proxies requests to the frps webServer with Basic Auth headers.
  *
  * Why proxy through backend:
- * - Avoids CORS issues (browser can't directly call frps from user's browser)
+ * - Avoids CORS issues
  * - Credentials never exposed to client-side JavaScript
  * - Works from any deployment mode (Docker, desktop, SSH remote)
  */
 
 import express, { type Request, type Response } from 'express'
-import { createRequire } from 'module'
-const require = createRequire(import.meta.url)
-const NodeCache = require('node-cache')
 
 const router = express.Router()
 
-// Cache frps config so it's available across requests without re-reading from body
-const frpsConfigCache = new NodeCache({ stdTTL: 0, checkperiod: 0 })
+// Simple module-level cache — no external dependencies
+let cachedConfig: FrpsConfig | null = null
 
 interface FrpsConfig {
   baseUrl: string
@@ -26,11 +22,12 @@ interface FrpsConfig {
 }
 
 export function setFrpsConfig(config: FrpsConfig) {
-  frpsConfigCache.set('frps-config', config)
+  cachedConfig = config
+  console.log('[frps] config saved:', { baseUrl: config.baseUrl, user: config.user, passwordSet: !!config.password })
 }
 
 function getFrpsConfig(): FrpsConfig | null {
-  return (frpsConfigCache.get('frps-config') as FrpsConfig | undefined) ?? null
+  return cachedConfig
 }
 
 function getBasicAuthHeader(user: string, password: string): string {
@@ -45,6 +42,7 @@ async function proxyFrps(
   body?: unknown,
 ): Promise<void> {
   const config = getFrpsConfig()
+  console.log('[frps] proxyFrps called, path:', path, 'config:', config ? { baseUrl: config.baseUrl, user: config.user, hasPwd: !!config.password } : null)
   if (!config) {
     res.status(503).json({ error: 'FRPS dashboard URL not configured' })
     return
@@ -52,21 +50,19 @@ async function proxyFrps(
 
   const base = config.baseUrl.replace(/\/$/, '')
   const url = `${base}/api/${path.replace(/^\/+/, '')}`
+  console.log('[frps] fetching URL:', url)
   const headers: Record<string, string> = {
     Authorization: getBasicAuthHeader(config.user, config.password),
     'Content-Type': 'application/json',
   }
+  console.log('[frps] Authorization header:', headers.Authorization)
 
   try {
-    const fetchOptions: RequestInit = {
-      method,
-      headers,
-    }
-    if (body) {
-      fetchOptions.body = JSON.stringify(body)
-    }
+    const fetchOptions: RequestInit = { method, headers }
+    if (body) fetchOptions.body = JSON.stringify(body)
 
     const response = await fetch(url, fetchOptions)
+    console.log('[frps] FRPS response status:', response.status)
 
     if (response.status === 204) {
       res.status(204).end()
@@ -74,8 +70,6 @@ async function proxyFrps(
     }
 
     const text = await response.text()
-
-    // frps dashboard may return non-JSON on error
     let data: unknown
     try {
       data = text ? JSON.parse(text) : {}
@@ -86,6 +80,7 @@ async function proxyFrps(
     res.status(response.status).json(data)
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err)
+    console.log('[frps] fetch error:', message)
     res.status(502).json({ error: `Failed to connect to FRPS dashboard: ${message}` })
   }
 }
@@ -105,7 +100,7 @@ router.get('/clients/:key', async (req: Request, res: Response) => {
   await proxyFrps(res, `clients/${req.params.key}`)
 })
 
-// GET /api/frps/proxies/:type  (tcp, udp, http, https, stcp, xtcp, sudp)
+// GET /api/frps/proxies/:type (tcp, udp, http, https, stcp, xtcp, sudp)
 router.get('/proxies/:type', async (req: Request, res: Response) => {
   await proxyFrps(res, `proxy/${req.params.type}`)
 })
@@ -120,7 +115,7 @@ router.delete('/proxies/offline', async (req: Request, res: Response) => {
   await proxyFrps(res, 'proxies?status=offline', 'DELETE')
 })
 
-// POST /api/frps/config — update the cached FRPS credentials (called on settings save)
+// POST /api/frps/config — update the cached FRPS credentials
 router.post('/config', (req: Request, res: Response) => {
   const { baseUrl, user, password } = req.body as {
     baseUrl?: string
@@ -139,9 +134,13 @@ router.post('/config', (req: Request, res: Response) => {
   res.status(200).json({ success: true })
 })
 
-// GET /api/frps/configured — check if FRPS credentials are cached
+// GET /api/frps/configured — check if credentials are cached (debug only)
 router.get('/configured', (req: Request, res: Response) => {
-  res.status(200).json({ configured: getFrpsConfig() !== null })
+  res.status(200).json({
+    configured: getFrpsConfig() !== null,
+    baseUrl: getFrpsConfig()?.baseUrl ?? null,
+    user: getFrpsConfig()?.user ?? null,
+  })
 })
 
 export default router
