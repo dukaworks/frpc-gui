@@ -90,6 +90,7 @@ async function detectMode(): Promise<'local' | 'remote'> {
 
 function App() {
   const [mode, setMode] = useState<'local' | 'remote' | 'loading'>('loading');
+  useTheme(); // Ensure dark class is on <html> before routes render
 
   useEffect(() => {
     detectMode().then(setMode);

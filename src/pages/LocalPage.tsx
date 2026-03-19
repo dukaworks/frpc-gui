@@ -33,6 +33,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { useFrpcConfig } from '@/hooks/useFrpcConfig';
+import { useTheme } from '@/hooks/useTheme';
 
 // ─── Uptime Display ───────────────────────────────────────────────────────────
 
@@ -68,6 +69,7 @@ function cleanAnsi(raw: string) {
 
 export default function LocalPage() {
   const { t } = useTranslation();
+  useTheme(); // Apply dark class to <html> for Tailwind dark mode
   const { frpsDashboardUrl } = useSettingsStore();
 
   // ── State ────────────────────────────────────────────────────────────────
