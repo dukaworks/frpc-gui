@@ -149,7 +149,8 @@
     "clearOfflineConfirm": "This will remove all offline client records from the FRPS dashboard. Active clients will not be affected.",
     "clearOfflineSuccess": "Offline clients cleared successfully",
     "openOriginal": "Open Original Dashboard",
-    "openOriginalDesc": "Open the native FRPS web dashboard"
+    "openOriginalDesc": "Open the native FRPS web dashboard",
+    "clientListRequiresV067": "v{{version}} — upgrade to v0.67+ for client list"
   },
   "settings": {
     "general": "General",

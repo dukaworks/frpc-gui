@@ -149,7 +149,8 @@
     "clearOfflineConfirm": "将从 FRPS 面板移除所有离线客户端记录，不影响当前在线的客户端。",
     "clearOfflineSuccess": "离线客户端已清理",
     "openOriginal": "打开原始面板",
-    "openOriginalDesc": "打开原生 FRPS Web 面板"
+    "openOriginalDesc": "打开原生 FRPS Web 面板",
+    "clientListRequiresV067": "v{{version}} — 升级到 v0.67+ 可查看客户端列表"
   },
   "settings": {
     "general": "常规",

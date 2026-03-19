@@ -94,11 +94,17 @@ export default function FrpsOverview() {
     setLoading(true)
     setError('')
     try {
-      const [info, clientList] = await Promise.all([
-        ApiClient.getFrpsServerInfo(),
-        ApiClient.getFrpsClients(),
-      ])
+      // Fetch serverinfo (always works)
+      const info = await ApiClient.getFrpsServerInfo()
       setServerInfo(info)
+
+      // Try /api/clients (v0.67.0+), fall back to empty list for older versions
+      let clientList: import('@/shared/types').FrpsClient[] = []
+      try {
+        clientList = await ApiClient.getFrpsClients()
+      } catch {
+        // /api/clients doesn't exist on frps < v0.67.0 — that's OK
+      }
       setClients(clientList)
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : String(e)
@@ -325,6 +331,11 @@ export default function FrpsOverview() {
                   <Users className="h-4 w-4" />
                   {t('frpsOverview.frpcClients')} ({clients.length})
                 </CardTitle>
+                {serverInfo && !clients.length && (
+                  <span className="text-xs text-muted-foreground">
+                    {t('frpsOverview.clientListRequiresV067', { version: serverInfo.version })}
+                  </span>
+                )}
                 <div className="flex gap-2">
                   <Tooltip>
                     <TooltipTrigger asChild>
