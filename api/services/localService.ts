@@ -167,6 +167,7 @@ class LocalServiceManager {
 
   /**
    * Discover frpc running as Docker container
+   * Uses JSON format to avoid Alpine not having grep
    */
   private async scanDocker(): Promise<LocalProcessInfo | null> {
     try {
@@ -174,35 +175,44 @@ class LocalServiceManager {
 
       const dockerCmd = this.hasSudo ? 'sudo docker' : 'docker';
 
-      // Find frpc container
+      // List all containers in JSON format (avoids needing grep in Alpine)
       const psOutput = await localExec(
-        `${dockerCmd} ps --format "{{.ID}}|{{.Names}}|{{.Image}}|{{.Status}}|{{.State}}"`,
+        `${dockerCmd} ps -a --format '{{json .}}'`,
         false
       );
 
-      const lines = psOutput.trim().split('\n');
-      let targetLine = '';
+      if (!psOutput.trim()) return null;
 
-      for (const line of lines) {
-        if (!line) continue;
-        const parts = line.split('|');
-        const [id, name, image, , state] = parts;
-        if (
-          name?.includes('frpc') ||
-          image?.includes('frpc') ||
-          image?.includes('fatedier/frp')
-        ) {
-          // Prefer running containers, but take first match
-          if (!targetLine || state === 'running') {
-            targetLine = line;
+      // Parse each line as JSON
+      let targetContainer: { ID: string; Names: string; Image: string; Status: string; State: string } | null = null;
+
+      for (const raw of psOutput.trim().split('\n').filter(Boolean)) {
+        try {
+          const c = JSON.parse(raw) as { ID: string; Names: string; Image: string; Status: string; State: string };
+          const name = c.Names || '';
+          const image = c.Image || '';
+          const state = c.State?.toLowerCase() || c.Status?.toLowerCase() || '';
+
+          // Match frpc containers (case-insensitive name match)
+          if (
+            name.toLowerCase().includes('frpc') ||
+            image.toLowerCase().includes('frpc') ||
+            image.toLowerCase().includes('fatedier/frp')
+          ) {
+            if (!targetContainer || state === 'running') {
+              targetContainer = c;
+            }
+            if (state === 'running') break;
           }
-          if (state === 'running') break;
+        } catch {
+          // Skip malformed JSON lines
         }
       }
 
-      if (!targetLine) return null;
+      if (!targetContainer) return null;
 
-      const [containerId, containerName, image, containerStatus] = targetLine.split('|');
+      const containerId = targetContainer.ID;
+      const containerName = targetContainer.Names || targetContainer.ID;
 
       // Get version
       let version = '';
@@ -281,7 +291,7 @@ class LocalServiceManager {
         configPath: containerConfigPath || hostConfigPath || undefined,
         command: `${dockerCmd} restart ${containerName}`,
         requiresSudo: !this.hasSudo,
-        uptime: containerStatus || 'Unknown',
+        uptime: targetContainer.Status || 'Unknown',
         startTimestamp,
         version: version || undefined,
       };
