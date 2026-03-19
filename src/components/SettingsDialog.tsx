@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useSettingsStore } from '@/store/settingsStore';
-import { useFrpcStore } from '@/store/frpcStore';
 import { ApiClient } from '@/lib/api';
 import {
   Dialog,
@@ -46,8 +45,6 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
     serverPageSize, setServerPageSize,
     frpsDashboardUrl, setFrpsDashboardUrl
   } = useSettingsStore();
-  
-  const { processInfo } = useFrpcStore();
 
   const [localFrpsUrl, setLocalFrpsUrl] = useState(frpsDashboardUrl);
   const [loadingAuto, setLoadingAuto] = useState(false);
@@ -70,24 +67,16 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
 
   // Auto-fill on open if empty
   useEffect(() => {
-    if (open && !frpsDashboardUrl && (processInfo?.configPath || import.meta.env.FRPC_CONFIG_PATH)) {
-        // Try to auto-fill from config content first (admin_addr)
-        // If that fails or is not present, try server_addr
+    if (open && !frpsDashboardUrl && import.meta.env.FRPC_CONFIG_PATH) {
         const autoFill = async () => {
              setLoadingAuto(true);
              try {
-                // In local mode, we can get the config path from environment variable
-                const configPath = processInfo?.configPath || import.meta.env.FRPC_CONFIG_PATH;
+                const configPath = import.meta.env.FRPC_CONFIG_PATH;
                 if (!configPath) return;
                 
                 const res = await ApiClient.getConfig(configPath);
                 if (!res.content) return;
                 
-                // 1. Try admin_addr (local admin) - actually this is for local frpc admin, 
-                // but user might want remote frps dashboard. 
-                // The user explicitly mentioned "server address" from [common].
-                
-                // 2. Try server_addr (remote frps)
                 const serverAddrMatch = res.content.match(/server_addr\s*=\s*"?([^"\s]+)"?/);
                 if (serverAddrMatch) {
                     let host = serverAddrMatch[1];
@@ -102,7 +91,7 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
         };
         autoFill();
     }
-  }, [open, frpsDashboardUrl, processInfo?.configPath]);
+  }, [open, frpsDashboardUrl]);
 
   const handleLanguageChange = (val: string) => {
     const lang = val as 'en' | 'zh';

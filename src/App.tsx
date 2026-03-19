@@ -118,9 +118,9 @@ function App() {
                   SSH Mode: / renders Connect → Dashboard (unchanged)
                 */}
                 <Route path="/local" element={mode === 'local' ? <LocalPage /> : <Navigate to="/" replace />} />
-                <Route path="/" element={<Connect />} />
+                <Route path="/" element={mode === 'remote' ? <Connect /> : <Navigate to="/local" replace />} />
                 <Route path="/simple" element={<ConnectSimple />} />
-                <Route path="/dashboard" element={<Dashboard />} />
+                <Route path="/dashboard" element={mode === 'remote' ? <Dashboard /> : <Navigate to="/local" replace />} />
                 <Route path="*" element={<Navigate to="/" replace />} />
               </Routes>
             </div>

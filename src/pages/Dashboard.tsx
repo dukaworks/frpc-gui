@@ -534,15 +534,6 @@ export default function Dashboard() {
                 </TooltipTrigger>
                 <TooltipContent>Rescan Service</TooltipContent>
               </Tooltip>
-              
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button variant="ghost" size="icon" onClick={handleLogout} className="rounded-full">
-                      <Power className="h-5 w-5 text-muted-foreground hover:text-destructive" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>Disconnect</TooltipContent>
-              </Tooltip>
             </div>
           </header>
 
