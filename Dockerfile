@@ -33,8 +33,8 @@ WORKDIR /app
 # Copy package files
 COPY package*.json ./
 
-# Install only production dependencies
-RUN npm ci --omit=dev
+# Install production dependencies + docker-cli (for Native Local Mode / docker.sock)
+RUN npm ci --omit=dev && apk add --no-cache docker-cli
 
 # Copy built artifacts from builder stage
 COPY --from=builder /app/dist ./dist
