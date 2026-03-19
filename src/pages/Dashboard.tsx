@@ -79,7 +79,7 @@ export default function Dashboard() {
   const { frpsDashboardUrl, serverPageSize } = useSettingsStore();
   const [settingsOpen, setSettingsOpen] = useState(false);
   const navigate = useNavigate();
-  const { isConnected, processInfo, disconnect, setProcessInfo, restartRequired, setRestartRequired } = useFrpcStore();
+  const { isConnected, sessionId, processInfo, disconnect, setProcessInfo, restartRequired, setRestartRequired } = useFrpcStore();
   const { savedConnections, addConnection, updateConnection, removeConnection } = useUserStore();
   const [configContent, setConfigContent] = useState('');
   const [loadingConfig, setLoadingConfig] = useState(false);
@@ -242,8 +242,14 @@ export default function Dashboard() {
   useEffect(() => {
     if (!isConnected) {
       navigate('/');
+      return;
     }
-  }, [isConnected, navigate]);
+    // In local mode, scan on mount to find frpc and load config
+    // sessionId='local' tells the backend to use LocalServiceManager
+    if (sessionId === 'local' && !processInfo) {
+      handleRescan();
+    }
+  }, [isConnected, navigate, sessionId, processInfo]);
 
   const loadConfig = async (path?: string) => {
     const targetPath = path || processInfo?.configPath;

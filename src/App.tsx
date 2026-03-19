@@ -129,17 +129,18 @@ function AppInner({ mode }: { mode: 'local' | 'remote' | 'loading' }) {
 
 function App() {
   const [mode, setMode] = useState<'local' | 'remote' | 'loading'>('loading');
-  const resetForLocalMode = useFrpcStore((s) => s.resetForLocalMode);
+  const { resetForLocalMode, setConnected } = useFrpcStore();
 
   useEffect(() => {
     detectMode().then((detected) => {
-      // Clear any stale SSH session when entering local mode
       if (detected === 'local') {
+        // Enter local mode: set connected state, then navigate to dashboard
         resetForLocalMode();
+        setConnected('local', null);
       }
       setMode(detected);
     });
-  }, [resetForLocalMode]);
+  }, [resetForLocalMode, setConnected]);
 
   return <AppInner mode={mode} />;
 }
