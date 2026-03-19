@@ -154,7 +154,7 @@ export default function LocalPage() {
   }, [processInfo?.serviceName, processInfo?.source]);
 
   // ── CRUD ────────────────────────────────────────────────────────────────
-  const { proxies, parseError, addProxy, updateProxy, deleteProxy, importProxies, generateToml } =
+  const { proxies, parseError, commonConfig, addProxy, updateProxy, deleteProxy, importProxies, generateToml } =
     useFrpcConfig(configContent);
 
   const existingNames = useMemo(() => new Set(proxies.map((p) => p.name)), [proxies]);
@@ -318,8 +318,20 @@ export default function LocalPage() {
               <CardContent className="flex-1 flex flex-col justify-center">
                 <div className="space-y-3">
                   <div>
-                    <div className="text-2xl font-bold text-foreground">127.0.0.1<span className="text-lg text-muted-foreground font-normal">:7000</span></div>
+                    <div className="text-2xl font-bold text-foreground break-all">
+                      {commonConfig.serverAddr || '127.0.0.1'}<span className="text-lg text-muted-foreground font-normal">:{commonConfig.serverPort || 7000}</span>
+                    </div>
                     <p className="text-xs text-muted-foreground mt-1">{t('dashboard.frpsAddress')}</p>
+                  </div>
+                  <div className="pt-3 border-t space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-muted-foreground flex items-center gap-2 text-xs">
+                        <Lock className="h-3 w-3" /> {t('dashboard.auth')}
+                      </span>
+                      <span className={`font-medium text-xs ${commonConfig.token ? 'text-green-600 dark:text-green-400' : 'text-muted-foreground'}`}>
+                        {commonConfig.token ? 'Token' : 'None'}
+                      </span>
+                    </div>
                   </div>
                 </div>
               </CardContent>
