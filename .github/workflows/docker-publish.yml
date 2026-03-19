@@ -30,6 +30,10 @@ jobs:
       - name: Setup Docker buildx
         uses: docker/setup-buildx-action@v2
 
+      # Clear buildx cache to force fresh build of all layers
+      - name: Prune buildx cache
+        run: docker buildx prune --filter "type!=source" --filter "type!=local" -f
+
       # Login against a Docker registry except on PR
       # https://github.com/docker/login-action
       - name: Log into registry ${{ env.REGISTRY }}
