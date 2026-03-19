@@ -3,11 +3,11 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import Connect from './pages/Connect';
 import ConnectSimple from './pages/ConnectSimple';
 import Dashboard from './pages/Dashboard';
+import LocalPage from './pages/LocalPage';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { Footer } from '@/components/Footer';
 import { useTheme } from '@/hooks/useTheme';
 import { useLanguage } from '@/hooks/useLanguage';
-import { useFrpcStore } from '@/store/frpcStore';
 
 class ErrorBoundary extends React.Component<
   { children: React.ReactNode },
@@ -70,11 +70,10 @@ class ErrorBoundary extends React.Component<
 
 /**
  * Detect GUI mode at app startup.
- * Frontend uses the backend /api/mode endpoint so the Docker image
+ * Frontend calls the backend /api/mode endpoint so the Docker image
  * works in both Local and SSH Remote modes without rebuilding.
  */
 async function detectMode(): Promise<'local' | 'remote'> {
-  // 1. Try the runtime API endpoint first
   try {
     const res = await fetch('/api/mode');
     if (res.ok) {
@@ -84,15 +83,17 @@ async function detectMode(): Promise<'local' | 'remote'> {
   } catch {
     // fetch failed, fall through
   }
-  // 2. Fall back to build-time env var
   return (import.meta as { env: { VITE_FRPC_GUI_MODE?: string } }).env.VITE_FRPC_GUI_MODE === 'local'
     ? 'local'
     : 'remote';
 }
 
-function AppInner({ mode }: { mode: 'local' | 'remote' | 'loading' }) {
-  useTheme();
-  useLanguage();
+function App() {
+  const [mode, setMode] = useState<'local' | 'remote' | 'loading'>('loading');
+
+  useEffect(() => {
+    detectMode().then(setMode);
+  }, []);
 
   if (mode === 'loading') {
     return (
@@ -112,8 +113,12 @@ function AppInner({ mode }: { mode: 'local' | 'remote' | 'loading' }) {
           <div className="flex min-h-screen flex-col">
             <div className="flex-1">
               <Routes>
-                {/* In local mode, skip the SSH connect page — go straight to dashboard */}
-                <Route path="/" element={mode === 'local' ? <Navigate to="/dashboard" replace /> : <Connect />} />
+                {/*
+                  Local Mode: /local renders LocalPage (no SSH, no sessionId, no zustand store)
+                  SSH Mode: / renders Connect → Dashboard (unchanged)
+                */}
+                <Route path="/local" element={mode === 'local' ? <LocalPage /> : <Navigate to="/" replace />} />
+                <Route path="/" element={<Connect />} />
                 <Route path="/simple" element={<ConnectSimple />} />
                 <Route path="/dashboard" element={<Dashboard />} />
                 <Route path="*" element={<Navigate to="/" replace />} />
@@ -125,24 +130,6 @@ function AppInner({ mode }: { mode: 'local' | 'remote' | 'loading' }) {
       </ErrorBoundary>
     </TooltipProvider>
   );
-}
-
-function App() {
-  const [mode, setMode] = useState<'local' | 'remote' | 'loading'>('loading');
-  const { resetForLocalMode, setConnected } = useFrpcStore();
-
-  useEffect(() => {
-    detectMode().then((detected) => {
-      if (detected === 'local') {
-        // Enter local mode: set connected state, then navigate to dashboard
-        resetForLocalMode();
-        setConnected('local', null);
-      }
-      setMode(detected);
-    });
-  }, [resetForLocalMode, setConnected]);
-
-  return <AppInner mode={mode} />;
 }
 
 export default App;
