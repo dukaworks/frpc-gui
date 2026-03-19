@@ -50,13 +50,8 @@ async function proxyFrps(
     return
   }
 
-  // FRPS dashboard may be served under /static/ (e.g. nginx reverse proxy)
-  // Detect whether the FRPS dashboard URL already contains a path prefix (e.g. /static).
-  // If the base URL path is "/" → API is at /api/; otherwise append /api/ to the existing path.
-  // This handles both direct FRPS deployment and reverse-proxy setups (nginx → /static/).
   const base = config.baseUrl.replace(/\/$/, '')
-  const apiBase = base === '' ? '/api' : `${base}/api`
-  const url = `${apiBase}/${path.replace(/^\/+/, '')}`
+  const url = `${base}/api/${path.replace(/^\/+/, '')}`
   const headers: Record<string, string> = {
     Authorization: getBasicAuthHeader(config.user, config.password),
     'Content-Type': 'application/json',
