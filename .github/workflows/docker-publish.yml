@@ -32,7 +32,7 @@ jobs:
 
       # Clear buildx cache to force fresh build of all layers
       - name: Prune buildx cache
-        run: docker buildx prune --filter "type!=source" --filter "type!=local" -f
+        run: docker buildx prune --all -f
 
       # Login against a Docker registry except on PR
       # https://github.com/docker/login-action
