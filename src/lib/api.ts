@@ -44,6 +44,7 @@ export class ApiClient {
 
   /**
    * Always fetch GUI mode from the backend — never cache across page loads.
+   * Fixes stale mode when switching between AIO and SSH Docker deployments.
    *
    * Background: when users switch between Docker images (AIO vs SSH), the SPA may
    * not fully reload, leaving a stale in-memory `cachedMode` from the previous
