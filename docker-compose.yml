@@ -10,7 +10,12 @@ services:
     environment:
       - NODE_ENV=production
       - PORT=3000
+      # Enable Native Local Mode (no SSH needed)
+      # - FRPC_GUI_MODE=local
+      # - FRPC_CONFIG_PATH=/etc/frp/frpc.toml
+      # Mount docker.sock for local Docker container discovery:
+      # - /var/run/docker.sock:/var/run/docker.sock
     # volumes:
-      # If you want to manage a local frpc.toml file on your host machine:
+      # Local config file (for local mode):
       # - ./frpc.toml:/etc/frp/frpc.toml
     restart: unless-stopped

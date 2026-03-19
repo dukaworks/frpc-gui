@@ -5,18 +5,18 @@
 </p>
 
 <p align="center">
-  <strong>Web-based GUI for managing Frpc remotely (via SSH)</strong>
+  <strong>Visual dashboard for managing Frpc via SSH — no more terminal editing</strong>
 </p>
 
 <p align="center">
   <a href="./LICENSE"><img src="https://img.shields.io/badge/license-MIT-8A2BE2.svg" alt="License"></a>
   <a href="https://github.com/dukaworks/frpc-gui/releases"><img src="https://img.shields.io/github/v/release/dukaworks/frpc-gui?display_name=tag&sort=semver" alt="Release"></a>
-  <a href="https://github.com/dukaworks/frpc-gui/actions/workflows/docker-publish.yml"><img src="https://github.com/dukaworks/frpc-gui/actions/workflows/docker-publish.yml/badge.svg" alt="Docker Build & Publish"></a>
-  <a href="https://github.com/dukaworks/frpc-gui/actions/workflows/desktop-release.yml"><img src="https://github.com/dukaworks/frpc-gui/actions/workflows/desktop-release.yml/badge.svg" alt="Desktop Build & Release"></a>
+  <a href="https://github.com/dukaworks/frpc-gui/actions/workflows/docker-publish.yml"><img src="https://github.com/dukaworks/frpc-gui/actions/workflows/docker-publish.yml/badge.svg" alt="Docker Build"></a>
+  <a href="https://github.com/dukaworks/frpc-gui/actions/workflows/desktop-release.yml"><img src="https://github.com/dukaworks/frpc-gui/actions/workflows/desktop-release.yml/badge.svg" alt="Desktop Build"></a>
   <br>
-  <a href="https://x.com/dukatalk"><img src="https://img.shields.io/badge/X-Follow%20@dukatalk-black.svg?logo=x" alt="Follow on X"></a>
-  <a href="https://t.me/zychen2022"><img src="https://img.shields.io/badge/Telegram-Channel-8A2BE2.svg?logo=telegram" alt="Telegram Channel"></a>
-  <a href="https://t.me/+wmMDJOMbU9FhMmNl"><img src="https://img.shields.io/badge/Telegram-Community-8A2BE2.svg?logo=telegram" alt="Telegram Community"></a>
+  <a href="https://x.com/dukatalk"><img src="https://img.shields.io/badge/X-Follow%20@dukatalk-black.svg?logo=x" alt="X"></a>
+  <a href="https://t.me/zychen2022"><img src="https://img.shields.io/badge/Telegram-Channel-8A2BE2.svg?logo=telegram" alt="Telegram"></a>
+  <a href="https://t.me/+wmMDJOMbU9FhMmNl"><img src="https://img.shields.io/badge/Telegram-Community-8A2BE2.svg?logo=telegram" alt="Telegram"></a>
 </p>
 
 <p align="center">
@@ -25,183 +25,146 @@
 
 ---
 
-**Frpc-GUI** is a modern dashboard for managing **frpc** (Fast Reverse Proxy Client) on remote machines over **SSH**. It replaces “SSH + nano” with a visual workflow: connect, edit proxies/config, and restart the service when needed.
+## What is this?
 
-If you mainly run frpc on routers / NAS / servers (PVE, OpenWrt, fnOS, etc.), the recommended setup is: install Frpc-GUI on your own PC, and manage the remote frpc via SSH.
+**Frpc-GUI** replaces "SSH + nano" with a visual interface. Connect to your server via SSH, then add/edit/delete proxies, tweak settings, and restart the service — all from a clean dashboard.
 
-## ✨ Features
+> **Best for**: Routers, NAS, servers (PVE, OpenWrt, fnOS, etc.) where frpc runs remotely.
 
-- 🚀 **Remote management**: Connect to any server running frpc via SSH.
-- 🎨 **Visual editor**: Manage proxies with a form UI (and a source/code mode when needed).
-- 🔄 **CRUD**: Add / edit / delete proxies (single or batch).
-- 🖥️ **Multi-server profiles**: Save and switch between multiple SSH targets.
-- 📊 **Logs & status**: View logs and control frpc when running as Docker/Systemd/Process.
-- 📄 **TOML friendly**: Works well with modern `frpc.toml` (INI also supported in many cases).
+## Features
 
-Supported languages: English / 中文 (i18n).
+| Feature | What it does |
+|---------|-------------|
+| 🚀 **SSH Remote** | Manage any server running frpc from your local machine |
+| 🎨 **Visual Editor** | Form-based proxy editor — no need to write TOML by hand |
+| 🔄 **CRUD Operations** | Add, edit, delete proxies (single or batch) |
+| 🖥️ **Multi-Server** | Save and switch between multiple SSH connections |
+| 📊 **Live Logs** | View real-time logs and service status |
+| 📄 **TOML/INI** | Supports both `frpc.toml` and legacy `.ini` formats |
 
-## 🧭 Table of Contents
+## Screenshots
 
-- [Screenshots](#-screenshots)
-- [Quick Start](#-quick-start)
-  - [Desktop (Recommended)](#desktop-recommended)
-  - [Docker](#docker)
-  - [Development](#development)
-- [How It Works](#-how-it-works)
-- [Security Notes](#-security-notes)
-- [Roadmap](#-roadmap)
-- [Configuration Reference](#️-configuration-reference)
-- [Community & Support](#-community--support)
-- [Contributing](#-contributing)
-- [License](#-license)
+<table>
+<tr>
+<td align="center"><strong>Dashboard</strong><br/><img src="docs/screenshots/en/03-dashboard-overview.png" width="280"/></td>
+<td align="center"><strong>Proxy Editor</strong><br/><img src="docs/screenshots/en/04-proxies.png" width="280"/></td>
+<td align="center"><strong>Config Editor</strong><br/><img src="docs/screenshots/en/05-config-editor.png" width="280"/></td>
+</tr>
+</table>
 
-## 🖼️ Screenshots
+## Quick Start
 
-English UI screenshots (Chinese UI screenshots are in [README_zh.md](./README_zh.md)).
+### Desktop App (Recommended)
 
-**Connect / Login**
-![Connect / Login](docs/screenshots/en/01-connect.png)
+Download from **[GitHub Releases](https://github.com/dukaworks/frpc-gui/releases)**:
 
-**Saved Servers**
-![Saved Servers](docs/screenshots/en/02-saved-servers.png)
-
-**Dashboard Overview**
-![Dashboard Overview](docs/screenshots/en/03-dashboard-overview.png)
-
-**Proxies**
-![Proxies](docs/screenshots/en/04-proxies.png)
-
-**Config Editor**
-![Config Editor](docs/screenshots/en/05-config-editor.png)
-
-**Logs**
-![Logs](docs/screenshots/en/06-logs.png)
-
-**Settings**
-![Settings](docs/screenshots/en/07-settings.png)
-
-**Windows Installer**
-![Windows Installer](docs/screenshots/en/08-windows-installers.png)
-
-## 📦 Quick Start
-
-### Desktop (Recommended)
-
-Download from GitHub Releases:
-
-- https://github.com/dukaworks/frpc-gui/releases
-
-Artifacts include:
-
-- Windows: `.exe` installer + `.zip`
-- macOS: `.dmg`
-- Linux: `.deb`
+| Platform | Download |
+|----------|----------|
+| Windows | `.exe` installer or `.zip` |
+| macOS | `.dmg` |
+| Linux | `.deb` |
 
 ### Docker
 
-#### Option 1: Docker Compose (Easiest)
-
+**One-liner:**
 ```bash
-# In this repository directory
+docker run -d --name frpc-gui -p 3000:3000 ghcr.io/dukaworks/frpc-gui:latest
+```
+Then open `http://localhost:3000`
+
+**With Docker Compose:**
+```bash
 docker compose up -d
 ```
 
-Access the dashboard at `http://localhost:3000`.
-
-#### Option 2: Docker Run
-
-```bash
-docker run -d \
-  --name frpc-gui \
-  -p 3000:3000 \
-  ghcr.io/dukaworks/frpc-gui:latest
-```
-
-Notes:
-- If you use Frpc-GUI mainly to manage remote frpc via SSH, you don't need to mount any local config file.
-- If you want the container to edit a local `frpc.toml` on the host, mount it (e.g. `/etc/frp/frpc.toml`).
-
-#### Option 3: All-In-One (AIO) with frpc (Local Mode)
-
-If you want to run **frpc-gui + frpc** together in one environment and manage the local config directly, use the AIO compose file:
-
+**All-In-One (frpc + GUI together):**
 ```bash
 docker compose -f docker-compose.aio.yml up -d
 ```
+This auto-creates a starter `frpc.toml` on first run.
 
-On first start it auto-creates `./frp/frpc.toml` (a starter template). You then edit it in the UI.
-
-See:
-
-- [docker-compose.aio.yml](./docker-compose.aio.yml)
-- [.env.local.example](./.env.local.example)
+**On an existing frpc server (Native Local):**
+```bash
+docker compose -f docker-compose.local.yml up -d
+```
+Mount your existing `frpc.toml` — frpc-gui auto-discovers the running frpc and manages it without SSH.
 
 ### Development
 
-1.  Clone the repository:
-    ```bash
-    git clone https://github.com/dukaworks/frpc-gui.git
-    cd frpc-gui
-    ```
+```bash
+git clone https://github.com/dukaworks/frpc-gui.git
+cd frpc-gui
+npm install
+npm run dev
+```
 
-2.  Install dependencies:
-    ```bash
-    npm install
-    ```
-
-3.  Start the development server:
-    ```bash
-    npm run dev
-    ```
-
-Build a desktop installer locally:
-
+Build desktop app locally:
 ```bash
 npm run electron:build
 ```
 
-The installer/executable will be generated in the `release` directory.
+## How It Works
 
-## 🔧 How It Works
+### Mode 1: SSH Remote (Default)
 
-- The desktop app bundles a local Express server and a React UI (Electron).
-- You connect to the remote machine via SSH.
-- Every action (scan status, read/write config, restart service, fetch logs) runs on the target machine through the SSH session.
+```
+┌─────────────┐    SSH     ┌─────────────────┐
+│ Frpc-GUI    │ ─────────> │ Remote Server   │
+│ (Your PC)   │            │ (runs frpc)     │
+└─────────────┘            └─────────────────┘
+```
 
-## 🔐 Security Notes
+- Frpc-GUI runs on your PC, connects to remote server via SSH
+- All operations execute through the SSH session
 
-- SSH credentials are stored locally on your machine (browser storage / desktop app storage).
-- Prefer SSH keys over passwords, and protect your private key with a passphrase.
-- The app binds the embedded server to `127.0.0.1` (desktop mode) for safety.
+### Mode 2: Native Local (No SSH)
 
-## 🛣️ Roadmap
+Deploy Frpc-GUI **on the same machine** as frpc. No SSH needed.
 
-- Operation audit & rollback for config saves (history snapshots + one-click revert)
-- More guided onboarding (first connection → next steps)
+```
+┌──────────────────────────────────────┐
+│  Machine running frpc                │
+│  ┌────────────┐    ┌──────────────┐  │
+│  │ frpc       │    │ Frpc-GUI     │  │
+│  │ (service)  │    │ (local mode) │  │
+│  └────────────┘    └──────────────┘  │
+└──────────────────────────────────────┘
+```
 
-## ⚙️ Configuration Reference
+- Frpc-GUI auto-discovers frpc via Docker, systemd, or process scan
+- Full service control: start / stop / restart
+- Live logs via `docker logs` or `journalctl`
+- **Docker**: Mount `/var/run/docker.sock` into the container
+- **Direct install**: No extra setup needed
 
-A comprehensive sample configuration file is included in this repository to help you understand all available options.
+### Deployment Comparison
 
-*   [**frpc_sample.toml**](./frpc_sample.toml): Contains examples for TCP, UDP, HTTP, HTTPS, STCP, XTCP, and Plugin configurations.
+| Deploy on | Recommended Mode | How |
+|-----------|-----------------|-----|
+| Your PC, manage remote server | SSH Remote | Desktop app or browser |
+| Same machine as frpc (Docker) | Native Local | `docker-compose.aio.yml` |
+| Same machine as frpc (bare metal) | Native Local | Desktop app or direct npm install |
 
-## 🤝 Community & Support
+## Security
 
-**DukaWorks** is dedicated to creating useful tools for developers.
+- SSH credentials stored **locally only** (browser/app storage)
+- Desktop app binds to `127.0.0.1` — not exposed to network
+- **Recommendation**: Use SSH keys instead of passwords
 
-*   **GitHub**: [github.com/dukaworks](https://github.com/dukaworks)
-*   **X / Twitter**: [@dukatalk](https://x.com/dukatalk)
-*   **Telegram Channel**: [@zychen2022](https://t.me/zychen2022)
-*   **Telegram Community**: [Join Group](https://t.me/+wmMDJOMbU9FhMmNl)
-*   **Email**: [dukaworks.zy@gmail.com](mailto:dukaworks.zy@gmail.com)
+## Config Reference
 
-## 🤝 Contributing
+See **[frpc_sample.toml](./frpc_sample.toml)** for examples of TCP, UDP, HTTP, HTTPS, STCP, XTCP, and plugins.
 
-Contributions are welcome! Please read [CONTRIBUTING.md](./CONTRIBUTING.md) for details on our code of conduct, and the process for submitting pull requests.
+## Support
 
-## 📄 License
+- **GitHub Issues**: [Report bugs](https://github.com/dukaworks/frpc-gui/issues)
+- **Telegram Channel**: [@zychen2022](https://t.me/zychen2022)
+- **Telegram Group**: [Join Discussion](https://t.me/+wmMDJOMbU9FhMmNl)
+- **Email**: dukaworks.zy@gmail.com
 
-This project is licensed under the MIT License - see the [LICENSE](./LICENSE) file for details.
+## License
+
+MIT — see [LICENSE](./LICENSE)
 
 ---
 

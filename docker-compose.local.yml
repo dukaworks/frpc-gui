@@ -1,0 +1,39 @@
+# ============================================================
+# Frpc-GUI — Native Local Mode (frpc-gui only)
+# ============================================================
+# For deploying frpc-gui on a machine that already runs frpc.
+# frpc-gui auto-discovers the existing frpc (Docker/systemd/process)
+# and lets you manage it via browser — no SSH needed.
+#
+# Usage:
+#   1. Edit FRPC_CONFIG_PATH below to match your frpc config path
+#   2. If frpc runs as Docker: make sure /var/run/docker.sock is mounted
+#   3. Run: docker compose -f docker-compose.local.yml up -d
+#   4. Open: http://<your-server-ip>:3000
+# ============================================================
+
+services:
+  frpc-gui:
+    image: ghcr.io/dukaworks/frpc-gui:latest
+    container_name: frpc-gui
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      # Enable Native Local Mode (no SSH)
+      - FRPC_GUI_MODE=local
+      # Path to your existing frpc config inside the container
+      # Change this to match your host's config path mapping below
+      - FRPC_CONFIG_PATH=/etc/frp/frpc.toml
+    volumes:
+      # Map your host's frpc config into the container
+      # Examples:
+      #   Linux:  ./frpc.toml:/etc/frp/frpc.toml
+      #   Synology: /volume1/docker/frpc/frpc.toml:/etc/frp/frpc.toml
+      #   Unraid:  /mnt/user/appdata/frpc/frpc.toml:/etc/frp/frpc.toml
+      - /path/to/your/frpc.toml:/etc/frp/frpc.toml
+      # Mount Docker socket so frpc-gui can detect & control Docker-frpc
+      # (remove if frpc runs as systemd or raw process)
+      - /var/run/docker.sock:/var/run/docker.sock
+    restart: unless-stopped

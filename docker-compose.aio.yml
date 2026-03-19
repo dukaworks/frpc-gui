@@ -18,6 +18,17 @@ services:
         ls -la /work
     restart: "no"
 
+  frpc:
+    image: fatedier/frpc:v0.67.0
+    container_name: frpc
+    volumes:
+      - ./frpc.toml:/etc/frp/frpc.toml
+    command: ["-c", "/etc/frp/frpc.toml"]
+    restart: unless-stopped
+    depends_on:
+      frp-init:
+        condition: service_completed_successfully
+
   frpc-gui:
     image: ghcr.io/dukaworks/frpc-gui:latest
     container_name: frpc-gui
@@ -26,26 +37,18 @@ services:
     environment:
       - NODE_ENV=production
       - PORT=3000
+      # Enable Native Local Mode
       - FRPC_GUI_MODE=local
-      # Path to the shared frpc configuration file
-      - FRPC_CONFIG_PATH=/etc/frpc.toml
-      # Frpc webServer API configuration for reload/status operations
-      - FRPC_WEB_SERVER_ADDR=frpc
+      # Path to frpc config inside the container
+      - FRPC_CONFIG_PATH=/etc/frp/frpc.toml
+      # Frpc webServer API (for reload/status operations)
+      - FRPC_WEB_SERVER_ADDR=127.0.0.1
       - FRPC_WEB_SERVER_PORT=7400
     volumes:
-      # Shared volume for configuration file access
-      - ./frpc.toml:/etc/frpc.toml
+      # Mount frpc.toml so the GUI can read/write it
+      - ./frpc.toml:/etc/frp/frpc.toml
+      # Mount Docker socket so the GUI can discover and control local containers
+      - /var/run/docker.sock:/var/run/docker.sock
     restart: unless-stopped
     depends_on:
       - frpc
-
-  frpc:
-    image: fatedier/frpc:v0.67.0
-    container_name: frpc
-    volumes:
-      - ./frpc.toml:/etc/frpc.toml
-    command: ["-c", "/etc/frpc.toml"]
-    restart: unless-stopped
-    depends_on:
-      frp-init:
-        condition: service_completed_successfully

@@ -1,6 +1,7 @@
 import { Router, type NextFunction, type Request, type Response } from 'express';
 import SshService, { sshManager } from '../services/sshService.js';
-import { existsSync, readFileSync, writeFileSync } from 'fs';
+import { localServiceManager } from '../services/localService.js';
+import { readFileSync, writeFileSync } from 'fs';
 
 const router = Router();
 
@@ -8,19 +9,7 @@ type AuthedRequest = Request & { ssh: SshService };
 type LocalAuthedRequest = Request & { localFileService: LocalFileService };
 
 function getLocalConfigPath() {
-  return process.env.FRPC_CONFIG_PATH || '/etc/frpc.toml';
-}
-
-function getLocalProcessInfo() {
-  const configPath = getLocalConfigPath();
-  return {
-    pid: 'local',
-    status: existsSync(configPath) ? 'running' : 'unknown',
-    source: 'docker',
-    serviceName: 'frpc',
-    configPath,
-    command: '',
-  };
+  return process.env.FRPC_CONFIG_PATH || '/etc/frp/frpc.toml';
 }
 
 // Local file service for local mode operations
@@ -95,7 +84,7 @@ router.post('/connect', async (req: Request, res: Response) => {
     res.json({ 
       sessionId, 
       status: 'connected',
-      process: getLocalProcessInfo()
+      process: await localServiceManager.scanFrpc()
     });
     return;
   }
@@ -153,7 +142,7 @@ router.post('/scan', requireAuth, async (req: Request, res: Response) => {
         const isLocalMode = process.env.FRPC_GUI_MODE === 'local';
         
         if (isLocalMode) {
-            res.json({ process: getLocalProcessInfo() });
+            res.json({ process: await localServiceManager.scanFrpc() });
         } else {
             // Standard SSH mode
             const processInfo = await (req as AuthedRequest).ssh.scanFrpc();
@@ -224,10 +213,25 @@ router.post('/service', requireAuth, async (req: Request, res: Response) => {
   const isLocalMode = process.env.FRPC_GUI_MODE === 'local';
   
   if (isLocalMode) {
-    // In local mode, we can't control remote services
-    return res.status(400).json({ error: 'Service control not available in local mode' });
+    if (!action || !type || !serviceName) {
+      return res.status(400).json({ error: 'Missing parameters: action, type, serviceName' });
+    }
+    try {
+      let output = '';
+      if (type === 'docker') {
+        output = await localServiceManager.controlDocker(action, serviceName);
+      } else if (type === 'systemd') {
+        output = await localServiceManager.controlSystemd(action, serviceName);
+      } else {
+        return res.status(400).json({ error: 'Unsupported service type for local mode control' });
+      }
+      res.json({ output, success: true });
+    } catch (error: unknown) {
+      res.status(500).json({ error: error instanceof Error ? error.message : String(error) });
+    }
+    return;
   }
-  
+
   if (!action || !type || !serviceName) {
       return res.status(400).json({ error: 'Missing parameters: action, type, serviceName' });
   }
@@ -271,19 +275,32 @@ router.get('/logs', requireAuth, async (req: Request, res: Response) => {
   // Check if we're in local mode
   const isLocalMode = process.env.FRPC_GUI_MODE === 'local';
   
-  if (isLocalMode) {
-    // In local mode, we can't fetch remote service logs
-    return res.status(400).json({ error: 'Service logs not available in local mode' });
-  }
-
   if (!type || !serviceName) {
     return res.status(400).json({ error: 'Missing type or serviceName' });
   }
 
+  const n = Math.min(parseInt(lines as string) || 50, 2000);
+  const hours = Number.isFinite(Number(sinceHours)) ? Math.max(1, Number(sinceHours)) : undefined;
+
+  if (isLocalMode) {
+    try {
+      let logs = '';
+      if (type === 'docker') {
+        logs = await localServiceManager.dockerLogs(serviceName, n, hours);
+      } else if (type === 'systemd') {
+        logs = await localServiceManager.systemdLogs(serviceName, n, hours);
+      } else {
+        return res.status(400).json({ error: 'Unsupported service type for local mode logs' });
+      }
+      res.json({ logs });
+    } catch (error: unknown) {
+      res.status(500).json({ error: error instanceof Error ? error.message : String(error) });
+    }
+    return;
+  }
+
   try {
     let cmd = '';
-    const n = Math.min(parseInt(lines as string) || 50, 2000);
-    const hours = Number.isFinite(Number(sinceHours)) ? Math.max(1, Number(sinceHours)) : null;
 
     if (type === 'docker') {
       cmd = hours
