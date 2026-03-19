@@ -67,8 +67,9 @@ export const useFrpcStore = create<FrpcState>()(
     }),
     {
       name: 'frpc-store',
+      // Don't persist isConnected — it must be re-determined at startup
+      // based on FRPC_GUI_MODE (local vs remote), not from stale localStorage.
       partialize: (state) => ({
-        isConnected: state.isConnected,
         sessionId: state.sessionId,
         processInfo: state.processInfo,
         configPath: state.configPath,
