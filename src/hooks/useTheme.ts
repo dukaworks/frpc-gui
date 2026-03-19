@@ -1,10 +1,33 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useSettingsStore } from '@/store/settingsStore';
 
 export function useTheme() {
-  const { theme, setTheme } = useSettingsStore();
+  const theme = useSettingsStore((s) => s.theme);
+  const setTheme = useSettingsStore((s) => s.setTheme);
+  const [hasHydrated, setHasHydrated] = useState(
+    useSettingsStore.persist?.hasHydrated?.() ?? true
+  );
 
   useEffect(() => {
+    // If already hydrated, we're done
+    if (useSettingsStore.persist?.hasHydrated?.()) {
+      setHasHydrated(true);
+      return;
+    }
+    // Otherwise subscribe to hydration completion
+    const unsub = useSettingsStore.persist?.onFinishHydration?.(() => {
+      setHasHydrated(true);
+    });
+    return () => {
+      unsub?.();
+    };
+  }, []);
+
+  useEffect(() => {
+    // Don't apply theme class until persisted state has rehydrated from localStorage.
+    // This prevents a flash from default 'dark' to a stale 'light' from localStorage.
+    if (!hasHydrated) return;
+
     const root = window.document.documentElement;
     root.classList.remove('light', 'dark');
 
@@ -16,7 +39,7 @@ export function useTheme() {
     } else {
       root.classList.add(theme);
     }
-  }, [theme]);
+  }, [theme, hasHydrated]);
 
   // Listen for system theme changes if mode is system
   useEffect(() => {
@@ -33,11 +56,10 @@ export function useTheme() {
     return () => mediaQuery.removeEventListener('change', handleChange);
   }, [theme]);
 
-  return { 
-    theme, 
+  return {
+    theme,
     setTheme,
-    // Compatibility with old interface if needed, but 'system' complicates boolean isDark
     isDark: theme === 'dark' || (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches),
-    toggleTheme: () => setTheme(theme === 'dark' ? 'light' : 'dark') // Simple toggle for legacy support
+    toggleTheme: () => setTheme(theme === 'dark' ? 'light' : 'dark'),
   };
 }
