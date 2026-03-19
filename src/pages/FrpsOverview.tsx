@@ -66,6 +66,8 @@ export default function FrpsOverview() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
 
+  // Fixed tab order — TCP first, always
+  const proxyTypes = ['tcp', 'udp', 'http', 'https', 'stcp', 'xtcp', 'sudp']
   const [feedbackOpen, setFeedbackOpen] = useState(false)
   const [feedbackType, setFeedbackType] = useState<'success' | 'error'>('success')
   const [feedbackMessage, setFeedbackMessage] = useState('')
@@ -100,15 +102,17 @@ export default function FrpsOverview() {
       }
       setClients(clientList)
 
-      // Fetch proxy list — group by type, show all types even if 0
-      const proxyTypes = ['tcp', 'udp', 'http', 'https', 'stcp', 'xtcp', 'sudp']
-      const grouped: Record<string, Record<string, FrpsProxyBase>> = {}
+      // Fetch proxy list — hardcoded tab order, TCP first
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const grouped: Record<string, any> = {}
       await Promise.allSettled(
         proxyTypes.map(async (type) => {
           try {
             const res = await ApiClient.getFrpsProxiesByType(type)
+            console.log(`[frps] /proxy/${type}:`, JSON.stringify(res?.proxies).slice(0, 200))
             grouped[type] = res?.proxies ?? {}
-          } catch {
+          } catch (e) {
+            console.log(`[frps] /proxy/${type} error:`, e)
             grouped[type] = {}
           }
         }),
@@ -301,9 +305,9 @@ export default function FrpsOverview() {
             ) : (
               <Card>
                 <CardContent className="p-0">
-                  <Tabs defaultValue={Object.keys(proxies)[0]} className="w-full">
+                  <Tabs defaultValue="tcp" className="w-full">
                     <TabsList className="w-full justify-start rounded-none border-b bg-background px-2 h-auto py-2">
-                      {Object.keys(proxies).map((type) => (
+                      {proxyTypes.map((type) => (
                         <TabsTrigger
                           key={type}
                           value={type}
@@ -313,7 +317,7 @@ export default function FrpsOverview() {
                         </TabsTrigger>
                       ))}
                     </TabsList>
-                    {Object.keys(proxies).map((type) => {
+                    {proxyTypes.map((type) => {
                       const items = proxies[type] || {}
                       return (
                         <TabsContent key={type} value={type} className="m-0">
