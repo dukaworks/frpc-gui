@@ -153,6 +153,7 @@
     "proxies": "Proxies",
     "noProxies": "No proxies configured",
     "proxyName": "Proxy Name",
+    "port": "Port",
     "config": "Configuration"
   },
   "settings": {

@@ -100,18 +100,16 @@ export default function FrpsOverview() {
       }
       setClients(clientList)
 
-      // Fetch proxy list — group by type
+      // Fetch proxy list — group by type, show all types even if 0
       const proxyTypes = ['tcp', 'udp', 'http', 'https', 'stcp', 'xtcp', 'sudp']
       const grouped: Record<string, Record<string, FrpsProxyBase>> = {}
       await Promise.allSettled(
         proxyTypes.map(async (type) => {
           try {
             const res = await ApiClient.getFrpsProxiesByType(type)
-            if (res?.proxies && Object.keys(res.proxies).length > 0) {
-              grouped[type] = res.proxies
-            }
+            grouped[type] = res?.proxies ?? {}
           } catch {
-            // Type not available — ignore
+            grouped[type] = {}
           }
         }),
       )
@@ -305,59 +303,73 @@ export default function FrpsOverview() {
                 <CardContent className="p-0">
                   <Tabs defaultValue={Object.keys(proxies)[0]} className="w-full">
                     <TabsList className="w-full justify-start rounded-none border-b bg-background px-2 h-auto py-2">
-                      {Object.entries(proxies).map(([type, items]) => (
+                      {Object.keys(proxies).map((type) => (
                         <TabsTrigger
                           key={type}
                           value={type}
                           className="text-xs uppercase data-[state=active]:font-bold"
                         >
-                          {type} ({Object.keys(items).length})
+                          {type} ({Object.keys(proxies[type] || {}).length})
                         </TabsTrigger>
                       ))}
                     </TabsList>
-                    {Object.entries(proxies).map(([type, items]) => (
-                      <TabsContent key={type} value={type} className="m-0">
-                        <div className="grid grid-cols-12 gap-2 text-xs text-muted-foreground font-medium px-4 py-2 border-b">
-                          <div className="col-span-4">{t('frpsOverview.proxyName')}</div>
-                          <div className="col-span-1 text-center">{t('frpsOverview.connections')}</div>
-                          <div className="col-span-2 text-right">{t('frpsOverview.trafficIn')}</div>
-                          <div className="col-span-2 text-right">{t('frpsOverview.trafficOut')}</div>
-                          <div className="col-span-3">{t('frpsOverview.status')}</div>
-                        </div>
-                        {Object.entries(items).map(([name, proxy]) => {
-                          const conf = proxy.conf as Record<string, unknown> | undefined
-                          const conns = conf?.curConns as number | undefined
-                          const trafficIn = conf?.totalTrafficIn as number | undefined
-                          const trafficOut = conf?.totalTrafficOut as number | undefined
-                          const isOnline = proxy.online === 'online' || proxy.online === true
-                          return (
-                            <div
-                              key={name}
-                              className="grid grid-cols-12 gap-2 items-center text-sm px-4 py-2 hover:bg-muted/50 transition-colors border-b last:border-0"
-                            >
-                              <div className="col-span-4 font-medium text-xs truncate" title={name}>
-                                {name}
+                    {Object.keys(proxies).map((type) => {
+                      const items = proxies[type] || {}
+                      return (
+                        <TabsContent key={type} value={type} className="m-0">
+                          {Object.keys(items).length === 0 ? (
+                            <p className="text-sm text-muted-foreground text-center py-8">{t('frpsOverview.noProxies')}</p>
+                          ) : (
+                            <div>
+                              <div className="grid grid-cols-12 gap-3 text-xs text-muted-foreground font-medium px-4 py-2 border-b">
+                                <div className="col-span-3">{t('frpsOverview.proxyName')}</div>
+                                <div className="col-span-1">{t('frpsOverview.port')}</div>
+                                <div className="col-span-1 text-center">{t('frpsOverview.connections')}</div>
+                                <div className="col-span-2 text-right">{t('frpsOverview.trafficIn')}</div>
+                                <div className="col-span-2 text-right">{t('frpsOverview.trafficOut')}</div>
+                                <div className="col-span-3">{t('frpsOverview.status')}</div>
                               </div>
-                              <div className="col-span-1 text-center text-xs text-muted-foreground font-mono">
-                                {conns ?? 0}
-                              </div>
-                              <div className="col-span-2 text-right text-xs text-muted-foreground font-mono">
-                                {trafficIn !== undefined ? formatBytes(trafficIn) : '0 B'}
-                              </div>
-                              <div className="col-span-2 text-right text-xs text-muted-foreground font-mono">
-                                {trafficOut !== undefined ? formatBytes(trafficOut) : '0 B'}
-                              </div>
-                              <div className="col-span-3 flex items-center gap-1.5">
-                                <span className={`w-2 h-2 rounded-full ${isOnline ? 'bg-green-500' : 'bg-gray-400'}`} />
-                                <span className={`text-xs font-medium ${isOnline ? 'text-green-600 dark:text-green-400' : 'text-muted-foreground'}`}>
-                                  {isOnline ? 'online' : 'offline'}
-                                </span>
-                              </div>
+                              {Object.entries(items).map(([name, proxy]) => {
+                                const conf = proxy.conf as Record<string, unknown> | undefined
+                                const conns = conf?.curConns as number | undefined
+                                const trafficIn = conf?.totalTrafficIn as number | undefined
+                                const trafficOut = conf?.totalTrafficOut as number | undefined
+                                const port = conf?.remoteAddr as string | undefined
+                                const isOnline = proxy.online === 'online' || proxy.online === true
+                                return (
+                                  <div
+                                    key={name}
+                                    className="grid grid-cols-12 gap-3 items-center text-sm px-4 py-2 hover:bg-muted/50 transition-colors border-b last:border-0"
+                                  >
+                                    <div className="col-span-3 font-medium text-xs truncate" title={name}>
+                                      {name}
+                                    </div>
+                                    <div className="col-span-1 text-xs text-muted-foreground font-mono">
+                                      {port || '—'}
+                                    </div>
+                                    <div className="col-span-1 text-center text-xs text-muted-foreground font-mono">
+                                      {conns ?? 0}
+                                    </div>
+                                    <div className="col-span-2 text-right text-xs text-muted-foreground font-mono">
+                                      {trafficIn !== undefined ? formatBytes(trafficIn) : '0 B'}
+                                    </div>
+                                    <div className="col-span-2 text-right text-xs text-muted-foreground font-mono">
+                                      {trafficOut !== undefined ? formatBytes(trafficOut) : '0 B'}
+                                    </div>
+                                    <div className="col-span-3 flex items-center gap-1.5">
+                                      <span className={`w-2 h-2 rounded-full ${isOnline ? 'bg-green-500' : 'bg-gray-400'}`} />
+                                      <span className={`text-xs font-medium ${isOnline ? 'text-green-600 dark:text-green-400' : 'text-muted-foreground'}`}>
+                                        {isOnline ? 'online' : 'offline'}
+                                      </span>
+                                    </div>
+                                  </div>
+                                )
+                              })}
                             </div>
-                          )
-                        })}
-                      </TabsContent>
-                    ))}
+                          )}
+                        </TabsContent>
+                      )
+                    })}
                   </Tabs>
                 </CardContent>
               </Card>

@@ -153,6 +153,7 @@
     "proxies": "代理列表",
     "noProxies": "暂无代理配置",
     "proxyName": "代理名称",
+    "port": "端口",
     "config": "配置信息"
   },
   "settings": {
