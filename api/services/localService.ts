@@ -192,13 +192,13 @@ class LocalServiceManager {
       for (const raw of psOutput.trim().split('\n').filter(Boolean)) {
         try {
           const c = JSON.parse(raw) as { ID: string; Names: string; Image: string; Status: string; State: string };
-          const name = c.Names || '';
+          const name = (c.Names || '').replace(/^\//, '');
           const image = c.Image || '';
           const state = c.State?.toLowerCase() || c.Status?.toLowerCase() || '';
 
           // Match frpc containers, but exclude ourselves (frpc-gui)
           if (
-            // Skip frpc-gui itself
+            // Skip frpc-gui itself (also skip if name starts with /frpc-gui)
             name === 'frpc-gui' ||
             // Match actual frpc containers
             !(name.toLowerCase().includes('frpc') ||

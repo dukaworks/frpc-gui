@@ -161,11 +161,15 @@ class SshService {
         
         for (const line of lines) {
             if (!line) continue;
-            const [id, name, image, status] = line.split('|');
-            if (name.includes('frpc') || image.includes('frpc') || image.includes('frp')) {
+            const [id, rawName, image, status] = line.split('|');
+            // Docker container names have a leading "/" prefix
+            const name = rawName.replace(/^\//, '');
+            // Skip frpc-gui itself — it would return the GUI's own logs instead of frpc's
+            if (name === 'frpc-gui') continue;
+            if (name.includes('frpc') || image.includes('frpc') || image.includes('fatedier/frp')) {
                 targetContainerId = id;
                 targetContainerName = name;
-                targetUptime = status; // e.g. "Up 2 hours"
+                targetUptime = status;
                 break;
             }
         }
